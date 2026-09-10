@@ -1,5 +1,18 @@
 extends Node3D
 
+func _save_frame(filename: String) -> bool:
+	var image := get_viewport().get_texture().get_image()
+	var output := OS.get_environment("GITHUB_WORKSPACE")
+	if output.is_empty():
+		output = ProjectSettings.globalize_path("res://")
+	var path := output.path_join(filename)
+	var err := image.save_png(path)
+	if err != OK:
+		push_error("Failed to save visual review screenshot: %s" % err)
+		return false
+	print("VISUAL_REVIEW_SAVED=" + path)
+	return true
+
 func _ready() -> void:
 	var scene := load("res://main.tscn") as PackedScene
 	if scene == null:
@@ -11,15 +24,11 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().create_timer(1.0).timeout
-	var image := get_viewport().get_texture().get_image()
-	var output := OS.get_environment("GITHUB_WORKSPACE")
-	if output.is_empty():
-		output = ProjectSettings.globalize_path("res://")
-	var path := output.path_join("visual-review.png")
-	var err := image.save_png(path)
-	if err != OK:
-		push_error("Failed to save visual review screenshot: %s" % err)
+	if not _save_frame("visual-review.png"):
 		get_tree().quit(1)
 		return
-	print("VISUAL_REVIEW_SAVED=" + path)
+	await get_tree().create_timer(2.5).timeout
+	if not _save_frame("visual-review-close.png"):
+		get_tree().quit(1)
+		return
 	get_tree().quit()
