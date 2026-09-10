@@ -1,0 +1,15 @@
+# Godot 4+
+.godot/
+
+# Android / builds
+android/build/
+build/
+exports/
+*.apk
+*.aab
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
