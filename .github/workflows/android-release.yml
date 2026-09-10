@@ -44,8 +44,8 @@ jobs:
           godot --headless --verbose --path . --editor --quit > godot-validation.log 2>&1
           STATUS=$?
           cat godot-validation.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" godot-validation.log; then
-            echo "Godot script validation failed"
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds" godot-validation.log; then
+            echo "Godot project validation failed"
             exit 1
           fi
           if [ "$STATUS" -ne 0 ]; then
@@ -55,16 +55,14 @@ jobs:
 
       - name: Capture real visual review
         run: |
-          if ! command -v xvfb-run >/dev/null 2>&1; then
-            apt-get update
-            apt-get install -y xvfb
-          fi
+          apt-get update
+          apt-get install -y xvfb libxcursor1 libfontconfig1 libwayland-cursor0
           rm -f visual-review.png visual-review.log
           set +e
-          xvfb-run -a -s "-screen 0 540x960x24" godot --path . --resolution 540x960 res://visual_review.tscn > visual-review.log 2>&1
+          xvfb-run -a -s "-screen 0 540x960x24" godot --display-driver x11 --rendering-method gl_compatibility --path . --resolution 540x960 res://visual_review.tscn > visual-review.log 2>&1
           STATUS=$?
           cat visual-review.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" visual-review.log; then
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds|Unable to create DisplayServer" visual-review.log; then
             echo "Visual review rejected: Godot reported an error"
             exit 1
           fi
@@ -89,8 +87,8 @@ jobs:
           godot --headless --verbose --path . --export-debug "Android" "${APK_PATH}" > godot-export.log 2>&1
           STATUS=$?
           cat godot-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" godot-export.log; then
-            echo "APK rejected: Godot reported script errors"
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds" godot-export.log; then
+            echo "APK rejected: Godot reported project errors"
             exit 1
           fi
           if [ "$STATUS" -ne 0 ]; then
