@@ -1,0 +1,29 @@
+newmtl Body
+Ka 0.02 0.02 0.03
+Kd 0.06 0.08 0.12
+Ks 0.45 0.48 0.55
+Ns 90
+illum 2
+
+newmtl Armor
+Ka 0.05 0.05 0.06
+Kd 0.45 0.52 0.62
+Ks 0.70 0.72 0.75
+Ns 120
+illum 2
+
+newmtl Hazard
+Ka 0.10 0.02 0.00
+Kd 0.95 0.20 0.015
+Ke 1.00 0.08 0.00
+Ks 0.30 0.10 0.05
+Ns 60
+illum 2
+
+newmtl Sensor
+Ka 0.12 0.00 0.00
+Kd 0.90 0.015 0.01
+Ke 1.00 0.00 0.00
+Ks 0.40 0.10 0.10
+Ns 80
+illum 2
