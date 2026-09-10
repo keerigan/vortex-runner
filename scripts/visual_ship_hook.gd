@@ -21,16 +21,16 @@ func _make_world() -> void:
 	camera.position = Vector3(0.08, -0.38, 8.00)
 	camera.rotation_degrees = Vector3(-1.5, -0.45, -0.10)
 	camera.fov = 65.0
-	# Soft depth haze is the missing layer between flat geometry and a cinematic tunnel.
 	for child in get_children():
 		if child is WorldEnvironment and child.environment:
-			var env := child.environment
-			env.ambient_light_color = Color(0.22, 0.20, 0.32)
-			env.ambient_light_energy = 1.35
-			env.fog_enabled = true
-			env.fog_light_color = Color(0.16, 0.10, 0.24)
-			env.fog_light_energy = 1.1
-			env.fog_density = 0.012
+			var env: Environment = child.environment as Environment
+			if env:
+				env.ambient_light_color = Color(0.22, 0.20, 0.32)
+				env.ambient_light_energy = 1.35
+				env.fog_enabled = true
+				env.fog_light_color = Color(0.16, 0.10, 0.24)
+				env.fog_light_energy = 1.1
+				env.fog_density = 0.012
 	var cool_fill := OmniLight3D.new()
 	cool_fill.position = Vector3(-2.8, -0.6, 1.4)
 	cool_fill.light_color = Color(0.18, 0.52, 0.95)
