@@ -1,6 +1,6 @@
 extends Node3D
 
-const TUNNEL_SEGMENTS := 28
+const TUNNEL_SEGMENTS := 32
 const SEGMENT_LENGTH := 4.0
 const TUNNEL_RADIUS := 6.0
 const OBSTACLE_COUNT := 12
@@ -11,7 +11,6 @@ var acceleration: float = 0.85
 var score: float = 0.0
 var alive: bool = true
 var elapsed: float = 0.0
-
 var ship: CharacterBody3D
 var ship_visual: Node3D
 var camera: Camera3D
@@ -19,328 +18,101 @@ var tunnel_root: Node3D
 var obstacle_root: Node3D
 var ui_label: Label
 var game_over_label: Label
-var engine_left: MeshInstance3D
-var engine_right: MeshInstance3D
-
-var pointer_active: bool = false
-var target_xy: Vector2 = Vector2.ZERO
+var engines: Array[MeshInstance3D] = []
+var pointer_active := false
+var target_xy := Vector2.ZERO
 
 func _ready() -> void:
-	randomize()
-	_make_world()
-	_spawn_tunnel()
-	_spawn_obstacles()
+ randomize(); _make_world(); _spawn_tunnel(); _spawn_obstacles()
+
+func _mat(color: Color, emission: Color = Color.BLACK, energy: float = 0.0, metallic: float = 0.0) -> StandardMaterial3D:
+ var m := StandardMaterial3D.new(); m.albedo_color=color; m.metallic=metallic; m.roughness=0.22
+ if energy > 0.0: m.emission_enabled=true; m.emission=emission; m.emission_energy_multiplier=energy
+ return m
+
+func _box(parent: Node3D, pos: Vector3, size: Vector3, mat: Material, rz: float=0.0, ry: float=0.0) -> MeshInstance3D:
+ var n:=MeshInstance3D.new(); var b:=BoxMesh.new(); b.size=size; n.mesh=b; n.position=pos; n.rotation_degrees=Vector3(0,ry,rz); n.material_override=mat; parent.add_child(n); return n
 
 func _make_world() -> void:
-	var world_env := WorldEnvironment.new()
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.003, 0.004, 0.012)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.22, 0.28, 0.55)
-	env.ambient_light_energy = 1.35
-	env.glow_enabled = true
-	world_env.environment = env
-	add_child(world_env)
+ var we:=WorldEnvironment.new(); var env:=Environment.new(); env.background_mode=Environment.BG_COLOR; env.background_color=Color(0.002,0.003,0.012); env.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR; env.ambient_light_color=Color(0.12,0.20,0.42); env.ambient_light_energy=1.15; env.glow_enabled=true; we.environment=env; add_child(we)
+ var light:=DirectionalLight3D.new(); light.rotation_degrees=Vector3(-28,-18,0); light.light_color=Color(0.55,0.72,1.0); light.light_energy=2.0; add_child(light)
+ ship=CharacterBody3D.new(); ship.position=Vector3(0,-1.15,2); add_child(ship)
+ var cs:=CollisionShape3D.new(); var sphere:=SphereShape3D.new(); sphere.radius=0.62; cs.shape=sphere; ship.add_child(cs)
+ ship_visual=Node3D.new(); ship_visual.rotation_degrees.x=-6; ship.add_child(ship_visual); _build_ship()
+ camera=Camera3D.new(); camera.position=Vector3(0,2.0,10.8); camera.rotation_degrees=Vector3(-9,0,0); camera.fov=72; add_child(camera); camera.current=true
+ tunnel_root=Node3D.new(); add_child(tunnel_root); obstacle_root=Node3D.new(); add_child(obstacle_root); _make_ui()
 
-	var light := DirectionalLight3D.new()
-	light.rotation_degrees = Vector3(-28, -18, 0)
-	light.light_energy = 1.8
-	add_child(light)
-
-	ship = CharacterBody3D.new()
-	ship.name = "Ship"
-	ship.position = Vector3(0, -1.1, 2.0)
-	add_child(ship)
-
-	var collision := CollisionShape3D.new()
-	var sphere := SphereShape3D.new()
-	sphere.radius = 0.62
-	collision.shape = sphere
-	ship.add_child(collision)
-
-	ship_visual = Node3D.new()
-	ship_visual.name = "ShipVisual"
-	ship_visual.rotation_degrees = Vector3(-7, 0, 0)
-	ship.add_child(ship_visual)
-	_build_ship_visual()
-
-	camera = Camera3D.new()
-	camera.position = Vector3(0, 2.0, 10.8)
-	camera.rotation_degrees = Vector3(-9, 0, 0)
-	camera.fov = 72.0
-	add_child(camera)
-	camera.current = true
-
-	tunnel_root = Node3D.new()
-	tunnel_root.name = "Tunnel"
-	add_child(tunnel_root)
-
-	obstacle_root = Node3D.new()
-	obstacle_root.name = "Obstacles"
-	add_child(obstacle_root)
-
-	_make_ui()
-
-func _build_ship_visual() -> void:
-	var body_mat := StandardMaterial3D.new()
-	body_mat.albedo_color = Color(0.08, 0.34, 0.62)
-	body_mat.metallic = 0.8
-	body_mat.roughness = 0.2
-	body_mat.emission_enabled = true
-	body_mat.emission = Color(0.0, 0.10, 0.26)
-	body_mat.emission_energy_multiplier = 1.6
-
-	var accent_mat := StandardMaterial3D.new()
-	accent_mat.albedo_color = Color(0.18, 0.9, 1.0)
-	accent_mat.metallic = 0.45
-	accent_mat.roughness = 0.16
-	accent_mat.emission_enabled = true
-	accent_mat.emission = Color(0.0, 0.55, 0.85)
-	accent_mat.emission_energy_multiplier = 3.2
-
-	var dark_mat := StandardMaterial3D.new()
-	dark_mat.albedo_color = Color(0.025, 0.04, 0.08)
-	dark_mat.metallic = 0.9
-	dark_mat.roughness = 0.18
-
-	var engine_mat := StandardMaterial3D.new()
-	engine_mat.albedo_color = Color(0.2, 0.8, 1.0)
-	engine_mat.emission_enabled = true
-	engine_mat.emission = Color(0.05, 0.65, 1.0)
-	engine_mat.emission_energy_multiplier = 5.0
-
-	_add_box(ship_visual, Vector3(0, 0, 0), Vector3(1.05, 0.38, 2.4), body_mat)
-	_add_box(ship_visual, Vector3(0, 0.24, -0.15), Vector3(0.55, 0.24, 1.3), dark_mat)
-	_add_box(ship_visual, Vector3(-0.92, -0.05, 0.15), Vector3(1.15, 0.16, 1.45), body_mat, -10.0)
-	_add_box(ship_visual, Vector3(0.92, -0.05, 0.15), Vector3(1.15, 0.16, 1.45), body_mat, 10.0)
-	_add_box(ship_visual, Vector3(-1.42, -0.05, 0.55), Vector3(0.45, 0.10, 0.75), accent_mat, -16.0)
-	_add_box(ship_visual, Vector3(1.42, -0.05, 0.55), Vector3(0.45, 0.10, 0.75), accent_mat, 16.0)
-	_add_box(ship_visual, Vector3(0, 0.02, -1.08), Vector3(0.38, 0.17, 0.35), accent_mat)
-
-	engine_left = _add_box(ship_visual, Vector3(-0.38, -0.12, 1.36), Vector3(0.24, 0.18, 0.8), engine_mat)
-	engine_right = _add_box(ship_visual, Vector3(0.38, -0.12, 1.36), Vector3(0.24, 0.18, 0.8), engine_mat)
-
-func _add_box(parent: Node3D, pos: Vector3, size: Vector3, material: Material, z_rotation: float = 0.0) -> MeshInstance3D:
-	var mesh_instance := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	mesh_instance.mesh = mesh
-	mesh_instance.position = pos
-	mesh_instance.rotation_degrees.z = z_rotation
-	mesh_instance.material_override = material
-	parent.add_child(mesh_instance)
-	return mesh_instance
+func _build_ship() -> void:
+ var hull:=_mat(Color(0.035,0.09,0.16),Color(0.0,0.06,0.16),1.2,0.9); var panel:=_mat(Color(0.10,0.32,0.48),Color(0.0,0.12,0.22),1.4,0.75); var cyan:=_mat(Color(0.10,0.9,1.0),Color(0.0,0.75,1.0),5.0,0.35); var glass:=_mat(Color(0.015,0.04,0.09),Color(0.0,0.12,0.25),1.2,0.8); var flame:=_mat(Color(0.7,0.95,1),Color(0.05,0.75,1),7.0)
+ _box(ship_visual,Vector3(0,0,0),Vector3(0.82,0.34,2.65),hull); _box(ship_visual,Vector3(0,0.24,-0.25),Vector3(0.50,0.25,1.15),glass)
+ _box(ship_visual,Vector3(-0.78,-0.03,0.12),Vector3(1.20,0.12,1.75),panel,-12); _box(ship_visual,Vector3(0.78,-0.03,0.12),Vector3(1.20,0.12,1.75),panel,12)
+ _box(ship_visual,Vector3(-1.42,-0.04,0.56),Vector3(0.62,0.08,1.0),hull,-20); _box(ship_visual,Vector3(1.42,-0.04,0.56),Vector3(0.62,0.08,1.0),hull,20)
+ _box(ship_visual,Vector3(-1.35,0.01,0.43),Vector3(0.46,0.05,0.60),cyan,-20); _box(ship_visual,Vector3(1.35,0.01,0.43),Vector3(0.46,0.05,0.60),cyan,20); _box(ship_visual,Vector3(0,0.02,-1.28),Vector3(0.24,0.12,0.42),cyan)
+ for x in [-0.34,0.34]:
+  _box(ship_visual,Vector3(x,-0.10,1.28),Vector3(0.30,0.24,0.35),hull); engines.append(_box(ship_visual,Vector3(x,-0.10,1.75),Vector3(0.18,0.14,1.15),flame))
 
 func _make_ui() -> void:
-	var layer := CanvasLayer.new()
-	add_child(layer)
-	ui_label = Label.new()
-	ui_label.position = Vector2(28, 28)
-	ui_label.add_theme_font_size_override("font_size", 34)
-	ui_label.text = "SCORE  000000"
-	layer.add_child(ui_label)
-
-	var hint := Label.new()
-	hint.position = Vector2(28, 76)
-	hint.add_theme_font_size_override("font_size", 22)
-	hint.text = "Glisse pour piloter"
-	layer.add_child(hint)
-
-	game_over_label = Label.new()
-	game_over_label.visible = false
-	game_over_label.set_anchors_preset(Control.PRESET_CENTER)
-	game_over_label.position = Vector2(-220, -90)
-	game_over_label.size = Vector2(440, 180)
-	game_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	game_over_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	game_over_label.add_theme_font_size_override("font_size", 42)
-	game_over_label.text = "CRASH !\nTouchez pour recommencer"
-	layer.add_child(game_over_label)
+ var layer:=CanvasLayer.new(); add_child(layer); ui_label=Label.new(); ui_label.position=Vector2(34,42); ui_label.add_theme_font_size_override("font_size",30); ui_label.text="000000"; layer.add_child(ui_label)
+ var title:=Label.new(); title.position=Vector2(34,78); title.add_theme_font_size_override("font_size",16); title.modulate=Color(0.35,0.8,1,0.75); title.text="VORTEX // RUNNER"; layer.add_child(title)
+ game_over_label=Label.new(); game_over_label.visible=false; game_over_label.set_anchors_preset(Control.PRESET_CENTER); game_over_label.position=Vector2(-220,-90); game_over_label.size=Vector2(440,180); game_over_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER; game_over_label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER; game_over_label.add_theme_font_size_override("font_size",40); game_over_label.text="SIGNAL LOST\nTOUCHE POUR RELANCER"; layer.add_child(game_over_label)
 
 func _spawn_tunnel() -> void:
-	for i in TUNNEL_SEGMENTS:
-		var seg := Node3D.new()
-		seg.position.z = -float(i) * SEGMENT_LENGTH
-		tunnel_root.add_child(seg)
-		for j in 12:
-			var bar := MeshInstance3D.new()
-			var box := BoxMesh.new()
-			box.size = Vector3(0.20, 0.20, SEGMENT_LENGTH * 0.84)
-			bar.mesh = box
-			var a: float = TAU * float(j) / 12.0
-			bar.position = Vector3(cos(a) * TUNNEL_RADIUS, sin(a) * TUNNEL_RADIUS, 0.0)
-			bar.rotation.z = a
-			var m := StandardMaterial3D.new()
-			var hue: float = fmod(float(i) * 0.034 + float(j) * 0.028, 1.0)
-			var c := Color.from_hsv(hue, 0.82, 1.0)
-			m.albedo_color = c * 0.28
-			m.emission_enabled = true
-			m.emission = c
-			m.emission_energy_multiplier = 3.2
-			bar.material_override = m
-			seg.add_child(bar)
+ for i in TUNNEL_SEGMENTS:
+  var seg:=Node3D.new(); seg.position.z=-float(i)*SEGMENT_LENGTH; seg.rotation.z=float(i)*0.045; tunnel_root.add_child(seg)
+  for j in 16:
+   var a:=TAU*float(j)/16.0; var bar:=MeshInstance3D.new(); var b:=BoxMesh.new(); b.size=Vector3(0.10 if j%2 else 0.18,0.10 if j%2 else 0.18,SEGMENT_LENGTH*0.78); bar.mesh=b; bar.position=Vector3(cos(a)*TUNNEL_RADIUS,sin(a)*TUNNEL_RADIUS,0); bar.rotation.z=a
+   var phase:=fmod(float(i)*0.018+float(j)*0.008,1.0); var c:=Color.from_hsv(0.52+phase*0.16,0.82,1); bar.material_override=_mat(c*0.18,c,2.5 if j%2 else 4.0); seg.add_child(bar)
 
 func _spawn_obstacles() -> void:
-	for i in OBSTACLE_COUNT:
-		var first_z: float = -42.0 - float(i) * 18.0
-		_reset_obstacle(_create_obstacle(), first_z)
+ for i in OBSTACLE_COUNT: _reset_obstacle(_create_obstacle(),-48.0-float(i)*19.0)
 
 func _create_obstacle() -> Area3D:
-	var area := Area3D.new()
-	area.monitoring = true
-	area.monitorable = true
-	obstacle_root.add_child(area)
+ var a:=Area3D.new(); a.monitoring=true; obstacle_root.add_child(a); var visual:=Node3D.new(); visual.name="Visual"; a.add_child(visual); var cs:=CollisionShape3D.new(); var shape:=BoxShape3D.new(); cs.shape=shape; a.add_child(cs); a.body_entered.connect(_hit); return a
 
-	var mesh_i := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	mesh_i.mesh = box
-	area.add_child(mesh_i)
-
-	var cs := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	cs.shape = shape
-	area.add_child(cs)
-
-	area.body_entered.connect(_on_obstacle_body_entered)
-	return area
-
-func _reset_obstacle(area: Area3D, zpos: float) -> void:
-	var mesh_i := area.get_child(0) as MeshInstance3D
-	var cs := area.get_child(1) as CollisionShape3D
-	var box := mesh_i.mesh as BoxMesh
-	var shape := cs.shape as BoxShape3D
-
-	var obstacle_type: int = randi_range(0, 2)
-	var obstacle_size := Vector3(1.5, 1.5, 1.0)
-	if obstacle_type == 1:
-		obstacle_size = Vector3(2.6, 0.65, 1.0)
-	elif obstacle_type == 2:
-		obstacle_size = Vector3(0.7, 2.5, 1.0)
-
-	var difficulty: float = clampf(elapsed / 35.0, 0.0, 1.0)
-	var scale_factor: float = randf_range(0.72, 0.95 + difficulty * 0.30)
-	obstacle_size *= scale_factor
-	box.size = obstacle_size
-	shape.size = obstacle_size * Vector3(0.90, 0.90, 1.0)
-
-	var mat := StandardMaterial3D.new()
-	var hue: float = randf_range(0.96, 1.04)
-	var c := Color.from_hsv(fmod(hue, 1.0), 0.92, 1.0)
-	mat.albedo_color = c * 0.48
-	mat.emission_enabled = true
-	mat.emission = c
-	mat.emission_energy_multiplier = 3.0
-	mesh_i.material_override = mat
-
-	var max_r: float = TUNNEL_RADIUS - maxf(obstacle_size.x, obstacle_size.y) * 0.55 - 0.8
-	var angle: float = randf_range(0.0, TAU)
-	var radius: float = randf_range(1.0, maxf(1.2, max_r))
-	area.position = Vector3(cos(angle) * radius, sin(angle) * radius, zpos)
-	area.rotation_degrees.z = randf_range(0.0, 360.0)
-	area.scale = Vector3.ONE
+func _reset_obstacle(a: Area3D,z: float) -> void:
+ var visual:=a.get_child(0) as Node3D; for c in visual.get_children(): c.queue_free()
+ var hot:=_mat(Color(0.38,0.06,0.025),Color(1.0,0.12,0.015),5.0,0.35); var dark:=_mat(Color(0.06,0.025,0.025),Color(0.22,0.01,0.0),1.0,0.75); var t:=randi_range(0,2); var size:=Vector3(1.45,1.45,0.8)
+ if t==0:
+  _box(visual,Vector3.ZERO,Vector3(1.35,1.35,0.72),dark); _box(visual,Vector3(0,0,0.42),Vector3(0.92,0.12,0.12),hot); _box(visual,Vector3(0,0,0.42),Vector3(0.12,0.92,0.12),hot)
+ elif t==1:
+  size=Vector3(2.5,0.58,0.75); _box(visual,Vector3.ZERO,size,dark); _box(visual,Vector3(0,0.05,0.42),Vector3(2.2,0.10,0.10),hot)
+ else:
+  size=Vector3(0.58,2.5,0.75); _box(visual,Vector3.ZERO,size,dark); _box(visual,Vector3(0.05,0,0.42),Vector3(0.10,2.2,0.10),hot)
+ var shape:=(a.get_child(1) as CollisionShape3D).shape as BoxShape3D; shape.size=size; var maxr:=TUNNEL_RADIUS-maxf(size.x,size.y)*0.55-0.9; var angle:=randf_range(0,TAU); var radius:=randf_range(1.0,maxf(1.2,maxr)); a.position=Vector3(cos(angle)*radius,sin(angle)*radius,z); a.rotation_degrees.z=randf_range(0,360)
 
 func _physics_process(delta: float) -> void:
-	if not alive:
-		return
-	elapsed += delta
-	speed = minf(max_speed, speed + acceleration * delta)
-	score += speed * delta
-	ui_label.text = "SCORE  %06d   VIT  %02d" % [int(score), int(speed)]
-	_update_ship(delta)
-	_update_camera(delta)
-	_update_tunnel(delta)
-	_update_obstacles(delta)
-	_update_engines()
+ if not alive:return
+ elapsed+=delta; speed=minf(max_speed,speed+acceleration*delta); score+=speed*delta; ui_label.text="%06d   //   %02d" % [int(score),int(speed)]; _update_ship(delta); _update_camera(delta); _update_world(delta); _update_engines()
 
 func _update_ship(delta: float) -> void:
-	var input_vec := Vector2.ZERO
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): input_vec.x -= 1.0
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): input_vec.x += 1.0
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP): input_vec.y -= 1.0
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN): input_vec.y += 1.0
-	if input_vec.length() > 1.0: input_vec = input_vec.normalized()
-
-	var desired := Vector2(ship.position.x, ship.position.y)
-	if input_vec.length() > 0.05:
-		desired += input_vec * 8.0 * delta
-	elif pointer_active:
-		desired = target_xy
-
-	var max_radius: float = TUNNEL_RADIUS - 1.0
-	if desired.length() > max_radius:
-		desired = desired.normalized() * max_radius
-
-	var current := Vector2(ship.position.x, ship.position.y)
-	var next_pos: Vector2 = current.lerp(desired, clampf(delta * 8.0, 0.0, 1.0))
-	ship.position.x = next_pos.x
-	ship.position.y = next_pos.y
-
-	var bank: float = clampf((desired.x - current.x) * -9.5, -32.0, 32.0)
-	ship_visual.rotation_degrees.z = lerpf(ship_visual.rotation_degrees.z, bank, clampf(delta * 8.0, 0.0, 1.0))
-	ship_visual.rotation_degrees.x = lerpf(ship_visual.rotation_degrees.x, -7.0 + (desired.y - current.y) * 3.0, clampf(delta * 7.0, 0.0, 1.0))
+ var v:=Vector2.ZERO; if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):v.x-=1; if Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D):v.x+=1; if Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W):v.y-=1; if Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S):v.y+=1
+ var desired:=Vector2(ship.position.x,ship.position.y); if v.length()>0.05:desired+=v.normalized()*8*delta; elif pointer_active:desired=target_xy
+ if desired.length()>5.0:desired=desired.normalized()*5.0
+ var current:=Vector2(ship.position.x,ship.position.y); var next:=current.lerp(desired,clampf(delta*8,0,1)); ship.position.x=next.x; ship.position.y=next.y; ship_visual.rotation_degrees.z=lerpf(ship_visual.rotation_degrees.z,clampf((desired.x-current.x)*-10,-34,34),clampf(delta*8,0,1))
 
 func _update_camera(delta: float) -> void:
-	var target_pos := Vector3(ship.position.x * 0.12, 2.0 + ship.position.y * 0.07, 10.8)
-	camera.position = camera.position.lerp(target_pos, clampf(delta * 2.2, 0.0, 1.0))
-	var target_fov: float = 72.0 + (speed - 14.0) * 0.42
-	camera.fov = lerpf(camera.fov, target_fov, clampf(delta * 2.0, 0.0, 1.0))
+ camera.position=camera.position.lerp(Vector3(ship.position.x*0.10,2.0+ship.position.y*0.06,10.8),clampf(delta*2.2,0,1)); camera.fov=lerpf(camera.fov,72+(speed-14)*0.44,clampf(delta*2,0,1))
 
-func _update_tunnel(delta: float) -> void:
-	var spin: float = 0.24 + speed * 0.0045
-	for seg in tunnel_root.get_children():
-		var segment := seg as Node3D
-		segment.position.z += speed * delta
-		segment.rotation.z += delta * spin
-		if segment.position.z > 8.0:
-			segment.position.z -= TUNNEL_SEGMENTS * SEGMENT_LENGTH
-
-func _update_obstacles(delta: float) -> void:
-	for child in obstacle_root.get_children():
-		var area := child as Area3D
-		area.position.z += speed * delta
-		area.rotation_degrees.z += (38.0 + speed * 0.7) * delta
-		if area.position.z > 8.0:
-			var difficulty: float = clampf(elapsed / 45.0, 0.0, 1.0)
-			var far_z: float = randf_range(-165.0 + difficulty * 25.0, -120.0 + difficulty * 20.0)
-			_reset_obstacle(area, far_z)
+func _update_world(delta: float) -> void:
+ for c in tunnel_root.get_children():
+  var s:=c as Node3D; s.position.z+=speed*delta; s.rotation.z+=delta*(0.18+speed*0.004); if s.position.z>8:s.position.z-=TUNNEL_SEGMENTS*SEGMENT_LENGTH
+ for c in obstacle_root.get_children():
+  var a:=c as Area3D; a.position.z+=speed*delta; a.rotation_degrees.z+=(30+speed*0.5)*delta; if a.position.z>8:_reset_obstacle(a,randf_range(-175,-125))
 
 func _update_engines() -> void:
-	var pulse: float = 0.85 + sin(elapsed * 16.0) * 0.12 + (speed - 14.0) * 0.012
-	engine_left.scale.z = pulse
-	engine_right.scale.z = pulse
+ var pulse:=0.85+sin(elapsed*20)*0.10+(speed-14)*0.014; for e in engines:e.scale.z=pulse
 
-func _on_obstacle_body_entered(body: Node) -> void:
-	if body == ship and alive:
-		alive = false
-		speed = 0.0
-		game_over_label.visible = true
-		ship_visual.rotation_degrees = Vector3(25, 0, 65)
+func _hit(body: Node) -> void:
+ if body==ship and alive: alive=false; speed=0; game_over_label.visible=true; ship_visual.rotation_degrees=Vector3(24,0,62)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not alive:
-		if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed):
-			get_tree().reload_current_scene()
-		return
+ if not alive:
+  if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed):get_tree().reload_current_scene()
+  return
+ if event is InputEventScreenTouch:pointer_active=event.pressed; if event.pressed:_target(event.position)
+ elif event is InputEventScreenDrag:pointer_active=true; _target(event.position)
+ elif event is InputEventMouseButton:pointer_active=event.pressed; if event.pressed:_target(event.position)
+ elif event is InputEventMouseMotion and pointer_active:_target(event.position)
 
-	if event is InputEventScreenTouch:
-		pointer_active = event.pressed
-		if event.pressed:
-			_set_target_from_screen(event.position)
-	elif event is InputEventScreenDrag:
-		pointer_active = true
-		_set_target_from_screen(event.position)
-	elif event is InputEventMouseButton:
-		pointer_active = event.pressed
-		if event.pressed:
-			_set_target_from_screen(event.position)
-	elif event is InputEventMouseMotion and pointer_active:
-		_set_target_from_screen(event.position)
-
-func _set_target_from_screen(screen_pos: Vector2) -> void:
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
-		return
-	var nx: float = (screen_pos.x / viewport_size.x) * 2.0 - 1.0
-	var ny: float = (screen_pos.y / viewport_size.y) * 2.0 - 1.0
-	target_xy = Vector2(nx * 4.6, -ny * 5.6)
+func _target(p: Vector2) -> void:
+ var s:=get_viewport().get_visible_rect().size; if s.x<=0 or s.y<=0:return; target_xy=Vector2((p.x/s.x*2-1)*5,-(p.y/s.y*2-1)*7)
