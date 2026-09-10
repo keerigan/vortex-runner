@@ -1,5 +1,22 @@
 extends "res://scripts/visual_overhaul.gd"
 
+func _add_ship_collisions() -> void:
+	# Slightly forgiving hitboxes matched to the smaller hero craft.
+	var body := CollisionShape3D.new()
+	var body_box := BoxShape3D.new()
+	body_box.size = Vector3(0.36, 0.21, 0.86)
+	body.shape = body_box
+	body.position = Vector3(0.0, 0.0, -0.14)
+	ship.add_child(body)
+	for side: float in [-1.0, 1.0]:
+		var wing := CollisionShape3D.new()
+		var wing_box := BoxShape3D.new()
+		wing_box.size = Vector3(0.45, 0.08, 0.34)
+		wing.shape = wing_box
+		wing.position = Vector3(side * 0.47, -0.02, 0.14)
+		wing.rotation_degrees.z = side * 10.0
+		ship.add_child(wing)
+
 func _make_world() -> void:
 	super._make_world()
 	camera.position = Vector3(0.08, -0.38, 8.00)
@@ -17,9 +34,30 @@ func _make_world() -> void:
 	warm_fill.light_energy = 2.4
 	warm_fill.omni_range = 6.0
 	add_child(warm_fill)
+	_build_camera_canopy()
+
+func _build_camera_canopy() -> void:
+	# Static near-camera architecture fills the otherwise empty portrait top third.
+	var shell := Node3D.new()
+	shell.name = "CameraCanopy"
+	add_child(shell)
+	var dark := _mat(Color(0.022, 0.027, 0.040), Color(0.004, 0.005, 0.012), 0.03, 0.90, 0.20)
+	var steel := _mat(Color(0.26, 0.29, 0.36), Color(0.015, 0.018, 0.03), 0.10, 0.78, 0.20)
+	var pale := _mat(Color(0.52, 0.56, 0.64), Color(0.025, 0.03, 0.05), 0.12, 0.62, 0.22)
+	var cyan := _mat(Color(0.12, 0.88, 1.0), Color(0.0, 0.72, 1.0), 3.6, 0.12, 0.06)
+	# Ceiling cassette spanning from the first moving section all the way over the camera.
+	_box(shell, Vector3(0.0, 2.18, 5.25), Vector3(9.4, 0.34, 10.5), dark)
+	for x: float in [-3.45, -1.72, 0.0, 1.72, 3.45]:
+		_box(shell, Vector3(x, 1.95, 5.25), Vector3(1.08, 0.17, 10.0), steel)
+	for z: float in [1.4, 4.2, 7.0, 9.4]:
+		_box(shell, Vector3(0.0, 1.72, z), Vector3(8.2, 0.17, 0.34), pale)
+	for x: float in [-3.05, -2.72, 2.72, 3.05]:
+		_cylinder(shell, Vector3(x, 1.63, 5.0), 0.095, 8.6, steel, Vector3(90.0, 0.0, 0.0))
+	# Only two inset strips near the transition, matching the reference's restrained lighting.
+	_box(shell, Vector3(-3.75, 1.68, 1.85), Vector3(0.07, 0.06, 2.2), cyan)
+	_box(shell, Vector3(3.75, 1.68, 1.85), Vector3(0.07, 0.06, 2.2), cyan)
 
 func _build_ship() -> void:
-	# Build parent resources first, then deliberately remove the legacy prototype geometry.
 	super._build_ship()
 	for child in ship_visual.get_children():
 		child.free()
@@ -28,6 +66,7 @@ func _build_ship() -> void:
 	var upgrade = load("res://scripts/ship_upgrade.gd")
 	if upgrade:
 		upgrade.decorate(self, ship_visual, Callable(self, "_box"), Callable(self, "_cylinder"), Callable(self, "_mat"))
+	ship_visual.scale = Vector3(0.82, 0.82, 0.82)
 
 func _build_corridor_section(section: Node3D, index: int) -> void:
 	var dark := _mat(Color(0.018, 0.022, 0.032), Color(0.003, 0.004, 0.009), 0.02, 0.91, 0.20)
@@ -107,4 +146,4 @@ func _make_ui() -> void:
 		if child is CanvasLayer:
 			for control in child.get_children():
 				if control is Label and control.text.begins_with("VORTEX // RUNNER"):
-					control.text = "VORTEX // RUNNER 1.5 // REVIEW"
+					control.text = "VORTEX // RUNNER 1.6 // REVIEW"
