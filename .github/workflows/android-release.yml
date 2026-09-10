@@ -69,7 +69,6 @@ jobs:
             exit "$STATUS"
           fi
           test -s visual-review.png
-          file visual-review.png
 
       - name: Upload visual review
         uses: actions/upload-artifact@v4
