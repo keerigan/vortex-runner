@@ -1,0 +1,91 @@
+name: Android APK Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    env:
+      GODOT_VERSION: '4.7.2'
+      GODOT_STATUS: 'stable'
+      GODOT_BIN: Godot_v4.7.2-stable_linux.x86_64
+      APK_PATH: build/vortex-runner.apk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip openjdk-17-jdk
+
+      - name: Download Godot
+        run: |
+          curl -L \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64.zip" \
+            -o godot.zip
+          unzip -q godot.zip
+          chmod +x "${GODOT_BIN}"
+          sudo mv "${GODOT_BIN}" /usr/local/bin/godot
+          godot --version
+
+      - name: Install Godot export templates
+        run: |
+          curl -L \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_export_templates.tpz" \
+            -o export_templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_STATUS}"
+          unzip -q export_templates.tpz -d /tmp/godot-templates
+          cp -r /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_STATUS}/"
+
+      - name: Create Android debug keystore
+        run: |
+          mkdir -p "$HOME/.local/share/godot/keystores"
+          keytool -genkeypair \
+            -keystore "$HOME/.local/share/godot/keystores/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ env.HOME }}/.local/share/godot/keystores/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-debug "Android" "${APK_PATH}"
+          test -f "${APK_PATH}"
+          ls -lh "${APK_PATH}"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vortex-runner-apk
+          path: ${{ env.APK_PATH }}
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "${APK_PATH}#Vortex Runner ${GITHUB_REF_NAME} APK" \
+            --title "Vortex Runner ${GITHUB_REF_NAME}" \
+            --generate-notes
