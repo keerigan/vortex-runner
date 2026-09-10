@@ -38,10 +38,36 @@ jobs:
              "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           godot --version
 
+      - name: Validate Godot project
+        run: |
+          set +e
+          godot --headless --verbose --path . --editor --quit > godot-validation.log 2>&1
+          STATUS=$?
+          cat godot-validation.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" godot-validation.log; then
+            echo "Godot script validation failed"
+            exit 1
+          fi
+          if [ "$STATUS" -ne 0 ]; then
+            echo "Godot validation command failed with status $STATUS"
+            exit "$STATUS"
+          fi
+
       - name: Build Android APK
         run: |
           mkdir -p build/android
-          godot --headless --verbose --path . --export-debug "Android" "${APK_PATH}"
+          set +e
+          godot --headless --verbose --path . --export-debug "Android" "${APK_PATH}" > godot-export.log 2>&1
+          STATUS=$?
+          cat godot-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" godot-export.log; then
+            echo "APK rejected: Godot reported script errors"
+            exit 1
+          fi
+          if [ "$STATUS" -ne 0 ]; then
+            echo "Godot export failed with status $STATUS"
+            exit "$STATUS"
+          fi
           test -f "${APK_PATH}"
           ls -lh "${APK_PATH}"
 
