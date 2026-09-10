@@ -20,6 +20,11 @@ func _make_world()->void:
 	for child in get_children():
 		if child is WorldEnvironment and child.environment: child.environment.ambient_light_color=Color(0.38,0.40,0.50); child.environment.ambient_light_energy=1.8
 
+func _add_drone_mesh(visual:Node3D, scale_value:float, roll:float)->void:
+	var drone_mesh:=load("res://assets/hazard_drone.obj") as Mesh
+	if drone_mesh:
+		var drone:=MeshInstance3D.new(); drone.mesh=drone_mesh; drone.scale=Vector3(scale_value,scale_value,scale_value); drone.rotation_degrees=Vector3(0,0,roll); visual.add_child(drone)
+
 func _reset_obstacle(area:Area3D,z:float)->void:
 	var visual:=area.get_child(0) as Node3D
 	for child in visual.get_children(): child.queue_free()
@@ -29,55 +34,45 @@ func _reset_obstacle(area:Area3D,z:float)->void:
 	var orange:=_mat(Color(1.0,0.34,0.015),Color(1.0,0.08,0.0),4.6,0.10,0.03)
 	var red:=_mat(Color(1.0,0.03,0.02),Color(1.0,0.0,0.0),3.8,0.10,0.03)
 	var type:=randi_range(0,3)
-	var size:=Vector3(1.35,0.95,0.76)
+	var size:=Vector3(1.35,0.95,0.72)
 	if type==0:
-		# HEAVY DRONE: solid armored fuselage with two engine pods.
-		_box(visual,Vector3.ZERO,Vector3(0.92,0.54,0.86),graphite)
-		_box(visual,Vector3(0,0.16,0.02),Vector3(0.64,0.20,0.56),darksteel,Vector3(-6,0,0))
+		# Dedicated interceptor mesh: broad, angular and visually self-contained.
+		_add_drone_mesh(visual,0.82,randf_range(-8.0,8.0))
 		for side:float in [-1.0,1.0]:
-			_box(visual,Vector3(side*0.58,-0.02,0.05),Vector3(0.44,0.42,0.72),darksteel,Vector3(0,side*7,0))
-			_cylinder(visual,Vector3(side*0.58,-0.02,0.44),0.16,0.12,steel)
-			_cylinder(visual,Vector3(side*0.58,-0.02,0.52),0.085,0.08,orange)
-		_cylinder(visual,Vector3(0,0.03,0.50),0.105,0.09,red)
-		size=Vector3(1.42,0.80,0.78)
+			_cylinder(visual,Vector3(side*0.55,-0.04,0.50),0.12,0.10,darksteel)
+			_cylinder(visual,Vector3(side*0.55,-0.04,0.57),0.065,0.07,orange)
+		size=Vector3(1.85,0.78,0.74)
 	elif type==1:
-		# RAIDER: compact swept craft. Wings are thick enough to read as armor, not bars.
-		_box(visual,Vector3.ZERO,Vector3(0.78,0.46,0.82),graphite)
-		_box(visual,Vector3(0,0.18,0.00),Vector3(0.52,0.18,0.52),steel,Vector3(-8,0,0))
-		for side:float in [-1.0,1.0]:
-			_box(visual,Vector3(side*0.58,-0.02,0.05),Vector3(0.64,0.25,0.52),darksteel,Vector3(0,side*18,side*-10))
-			_box(visual,Vector3(side*0.84,-0.04,0.07),Vector3(0.30,0.18,0.38),steel,Vector3(0,side*24,side*-12))
-			_box(visual,Vector3(side*0.88,-0.04,0.31),Vector3(0.10,0.10,0.10),orange,Vector3(0,side*24,side*-12))
-		_cylinder(visual,Vector3(0,0.02,0.49),0.11,0.09,red)
-		size=Vector3(1.78,0.76,0.74)
+		# Smaller rolled interceptor variant; reads as the same hazard family.
+		_add_drone_mesh(visual,0.68,randf_range(-20.0,20.0))
+		_box(visual,Vector3(0,-0.22,0.02),Vector3(0.60,0.10,0.46),darksteel)
+		_cylinder(visual,Vector3(0,-0.22,0.34),0.08,0.08,red)
+		size=Vector3(1.55,0.72,0.66)
 	elif type==2:
-		# CARGO BLOCK: industrial floating crate with recessed warning panel.
-		_box(visual,Vector3.ZERO,Vector3(1.10,0.94,0.76),graphite,Vector3(0,0,4))
-		_box(visual,Vector3(0,0,0.42),Vector3(0.82,0.68,0.08),darksteel,Vector3(0,0,4))
-		for x:float in [-0.42,0.42]:
-			_box(visual,Vector3(x,0,0.45),Vector3(0.12,0.58,0.08),steel,Vector3(0,0,4))
-		for y:float in [-0.34,0.34]:
-			_box(visual,Vector3(0,y,0.46),Vector3(0.62,0.10,0.07),steel,Vector3(0,0,4))
-		_box(visual,Vector3(0,0,0.48),Vector3(0.30,0.12,0.06),orange,Vector3(0,0,4))
-		_cylinder(visual,Vector3(0.39,0.28,0.50),0.065,0.07,red)
-		size=Vector3(1.12,0.96,0.78)
+		# Industrial cargo debris: dense shape, not a gate or a glowing stick.
+		_box(visual,Vector3(-0.34,0.15,0),Vector3(0.72,0.80,0.70),graphite,Vector3(0,0,-8))
+		_box(visual,Vector3(0.36,-0.13,0),Vector3(0.68,0.72,0.68),darksteel,Vector3(0,0,10))
+		_box(visual,Vector3(-0.34,0.15,0.39),Vector3(0.46,0.52,0.07),steel,Vector3(0,0,-8))
+		_box(visual,Vector3(0.36,-0.13,0.38),Vector3(0.44,0.46,0.07),steel,Vector3(0,0,10))
+		_box(visual,Vector3(0.36,-0.13,0.43),Vector3(0.10,0.32,0.05),orange,Vector3(0,0,10))
+		_cylinder(visual,Vector3(-0.34,0.15,0.45),0.065,0.07,red)
+		size=Vector3(1.20,1.02,0.72)
 	else:
-		# SHARD MINE: compact diamond body with four short heavy fins.
-		_box(visual,Vector3.ZERO,Vector3(0.82,0.82,0.68),graphite,Vector3(0,0,45))
-		_box(visual,Vector3(0,0,0.39),Vector3(0.54,0.54,0.08),darksteel,Vector3(0,0,45))
+		# Compact mine: short chunky fins and restrained warning lights.
+		_box(visual,Vector3.ZERO,Vector3(0.78,0.78,0.66),graphite,Vector3(0,0,45))
+		_box(visual,Vector3(0,0,0.38),Vector3(0.50,0.50,0.07),darksteel,Vector3(0,0,45))
 		for a:float in [45,135,225,315]:
-			var r:=deg_to_rad(a); _box(visual,Vector3(cos(r)*0.48,sin(r)*0.48,0.03),Vector3(0.42,0.20,0.46),steel,Vector3(0,0,a))
-			_box(visual,Vector3(cos(r)*0.60,sin(r)*0.60,0.30),Vector3(0.10,0.08,0.08),orange,Vector3(0,0,a))
-		_cylinder(visual,Vector3(0,0,0.48),0.11,0.09,red)
-		size=Vector3(1.22,1.22,0.70)
-	var glow:=OmniLight3D.new(); glow.position=Vector3(0,0,0.55); glow.light_color=Color(1.0,0.08,0.02); glow.light_energy=0.9; glow.omni_range=1.45; visual.add_child(glow)
-	var collision:=area.get_child(1) as CollisionShape3D; (collision.shape as BoxShape3D).size=size*0.62
+			var r:=deg_to_rad(a); _box(visual,Vector3(cos(r)*0.43,sin(r)*0.43,0.02),Vector3(0.34,0.22,0.42),steel,Vector3(0,0,a))
+		_cylinder(visual,Vector3(0,0,0.45),0.10,0.08,red)
+		size=Vector3(1.10,1.10,0.68)
+	var glow:=OmniLight3D.new(); glow.position=Vector3(0,0,0.52); glow.light_color=Color(1.0,0.08,0.02); glow.light_energy=0.75; glow.omni_range=1.3; visual.add_child(glow)
+	var collision:=area.get_child(1) as CollisionShape3D; (collision.shape as BoxShape3D).size=size*0.60
 	var idx:=area.get_index()
-	if idx==0: area.position=Vector3(-1.05,-0.20,-20.0)
-	elif idx==1: area.position=Vector3(1.15,0.28,-31.0)
-	elif idx==2: area.position=Vector3(-0.55,-0.36,-43.0)
+	if idx==0: area.position=Vector3(-1.00,-0.18,-20.5)
+	elif idx==1: area.position=Vector3(1.10,0.28,-31.5)
+	elif idx==2: area.position=Vector3(-0.55,-0.36,-44.0)
 	else: area.position=Vector3(randf_range(-3.0,3.0),randf_range(-1.9,1.05),z)
-	area.rotation_degrees.z=randf_range(-6.0,6.0)
+	area.rotation_degrees.z=randf_range(-5.0,5.0)
 
 func _update_camera(delta:float)->void:
 	var target:=Vector3(0.04+ship.position.x*0.015,-0.18+ship.position.y*0.008,7.85); camera.position=camera.position.lerp(target,clampf(delta*1.5,0,1)); camera.fov=lerpf(camera.fov,64+(speed-13)*0.05,clampf(delta*1.2,0,1))
@@ -87,4 +82,4 @@ func _make_ui()->void:
 	for child in get_children():
 		if child is CanvasLayer:
 			for control in child.get_children():
-				if control is Label and control.text.begins_with("VORTEX // RUNNER"): control.text="VORTEX // RUNNER 2.7 // HEAVY DRONES"
+				if control is Label and control.text.begins_with("VORTEX // RUNNER"): control.text="VORTEX // RUNNER 2.8 // HARD SURFACE"
