@@ -13,63 +13,35 @@ permissions:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
 
     env:
       GODOT_VERSION: '4.7.2'
-      GODOT_STATUS: 'stable'
-      GODOT_BIN: Godot_v4.7.2-stable_linux.x86_64
-      APK_PATH: build/vortex-runner.apk
+      APK_PATH: build/android/vortex-runner.apk
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
-      - name: Install dependencies
+      - name: Setup Godot templates
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip openjdk-17-jdk
-
-      - name: Download Godot
-        run: |
-          curl -L \
-            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64.zip" \
-            -o godot.zip
-          unzip -q godot.zip
-          chmod +x "${GODOT_BIN}"
-          sudo mv "${GODOT_BIN}" /usr/local/bin/godot
+          mkdir -p ~/.local/share/godot/export_templates/
+          mkdir -p ~/.config/
+          if [ -d /root/.config/godot ]; then
+            mv /root/.config/godot ~/.config/godot
+          fi
+          mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" \
+             "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           godot --version
 
-      - name: Install Godot export templates
+      - name: Build Android APK
         run: |
-          curl -L \
-            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_export_templates.tpz" \
-            -o export_templates.tpz
-          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_STATUS}"
-          unzip -q export_templates.tpz -d /tmp/godot-templates
-          cp -r /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_STATUS}/"
-
-      - name: Create Android debug keystore
-        run: |
-          mkdir -p "$HOME/.local/share/godot/keystores"
-          keytool -genkeypair \
-            -keystore "$HOME/.local/share/godot/keystores/debug.keystore" \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
-
-      - name: Build APK
-        env:
-          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ env.HOME }}/.local/share/godot/keystores/debug.keystore
-          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
-          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
-        run: |
-          mkdir -p build
-          godot --headless --path . --export-debug "Android" "${APK_PATH}"
+          mkdir -p build/android
+          godot --headless --verbose --path . --export-debug "Android" "${APK_PATH}"
           test -f "${APK_PATH}"
           ls -lh "${APK_PATH}"
 
