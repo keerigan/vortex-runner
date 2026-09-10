@@ -54,22 +54,22 @@ jobs:
 
       - name: Publish latest development release
         if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release delete latest --cleanup-tag -y || true
-          gh release create latest \
-            "${APK_PATH}#vortex-runner.apk" \
-            --target "${GITHUB_SHA}" \
-            --title "Vortex Runner - Latest" \
-            --notes "Dernier APK construit automatiquement depuis la branche main."
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Vortex Runner - Latest
+          body: Dernier APK construit automatiquement depuis la branche main.
+          files: ${{ env.APK_PATH }}
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          make_latest: true
 
       - name: Publish versioned release
         if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            "${APK_PATH}#vortex-runner-${GITHUB_REF_NAME}.apk" \
-            --title "Vortex Runner ${GITHUB_REF_NAME}" \
-            --generate-notes
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ${{ env.APK_PATH }}
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          generate_release_notes: true
+          make_latest: true
