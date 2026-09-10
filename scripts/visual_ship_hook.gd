@@ -19,8 +19,18 @@ func _add_ship_collisions() -> void:
 func _make_world() -> void:
 	super._make_world()
 	camera.position = Vector3(0.08, -0.38, 8.00)
-	camera.rotation_degrees = Vector3(-0.8, -0.45, -0.10)
+	camera.rotation_degrees = Vector3(-1.5, -0.45, -0.10)
 	camera.fov = 65.0
+	# Soft depth haze is the missing layer between flat geometry and a cinematic tunnel.
+	for child in get_children():
+		if child is WorldEnvironment and child.environment:
+			var env := child.environment
+			env.ambient_light_color = Color(0.22, 0.20, 0.32)
+			env.ambient_light_energy = 1.35
+			env.fog_enabled = true
+			env.fog_light_color = Color(0.16, 0.10, 0.24)
+			env.fog_light_energy = 1.1
+			env.fog_density = 0.012
 	var cool_fill := OmniLight3D.new()
 	cool_fill.position = Vector3(-2.8, -0.6, 1.4)
 	cool_fill.light_color = Color(0.18, 0.52, 0.95)
@@ -36,32 +46,25 @@ func _make_world() -> void:
 	_build_camera_canopy()
 
 func _build_camera_canopy() -> void:
-	# Perspective ceiling: long machinery and pipes, no giant full-width bars near the lens.
 	var shell := Node3D.new()
 	shell.name = "CameraCanopy"
 	add_child(shell)
-	var dark := _mat(Color(0.022, 0.027, 0.040), Color(0.004, 0.005, 0.012), 0.03, 0.90, 0.20)
-	var gunmetal := _mat(Color(0.070, 0.082, 0.115), Color(0.006, 0.008, 0.015), 0.05, 0.88, 0.20)
-	var steel := _mat(Color(0.30, 0.34, 0.42), Color(0.018, 0.022, 0.038), 0.10, 0.76, 0.19)
-	var pale := _mat(Color(0.55, 0.59, 0.68), Color(0.025, 0.03, 0.05), 0.12, 0.62, 0.22)
-	var cyan := _mat(Color(0.12, 0.88, 1.0), Color(0.0, 0.72, 1.0), 3.6, 0.12, 0.06)
-	# Main dark roof.
+	var dark := _mat(Color(0.026, 0.031, 0.045), Color(0.004, 0.005, 0.012), 0.03, 0.90, 0.20)
+	var gunmetal := _mat(Color(0.095, 0.110, 0.145), Color(0.006, 0.008, 0.015), 0.05, 0.86, 0.20)
+	var steel := _mat(Color(0.36, 0.39, 0.47), Color(0.018, 0.022, 0.038), 0.10, 0.72, 0.19)
+	var pale := _mat(Color(0.62, 0.66, 0.74), Color(0.025, 0.03, 0.05), 0.12, 0.58, 0.22)
+	var cyan := _mat(Color(0.12, 0.88, 1.0), Color(0.0, 0.72, 1.0), 3.2, 0.12, 0.06)
 	_box(shell, Vector3(0.0, 2.20, 5.1), Vector3(9.4, 0.34, 10.8), dark)
-	# Five long recessed channels produce strong perspective instead of horizontal bands.
 	for x: float in [-3.55, -1.80, 0.0, 1.80, 3.55]:
 		_box(shell, Vector3(x, 1.96, 5.0), Vector3(1.05, 0.16, 10.0), gunmetal)
-	# Cable/pipe bundles visible in the upper field.
 	for x: float in [-3.05, -2.72, -2.39, 2.39, 2.72, 3.05]:
 		_cylinder(shell, Vector3(x, 1.64, 5.0), 0.085, 8.7, steel, Vector3(90.0, 0.0, 0.0))
-	# Only distant transverse braces; near-camera braces are split at the sides.
 	for z: float in [0.8, 3.1]:
 		_box(shell, Vector3(0.0, 1.70, z), Vector3(8.1, 0.16, 0.30), pale)
 	for side: float in [-1.0, 1.0]:
 		for z: float in [5.6, 8.1]:
 			_box(shell, Vector3(side * 3.20, 1.72, z), Vector3(2.15, 0.16, 0.30), pale)
-		# Long recessed cyan rails like the reference roof strips.
 		_box(shell, Vector3(side * 3.82, 1.58, 4.4), Vector3(0.065, 0.055, 7.2), cyan)
-		# Large triangular-ish side brackets made from angled beams.
 		_box(shell, Vector3(side * 4.16, 1.28, 5.9), Vector3(0.20, 1.10, 2.6), steel, Vector3(0.0, 0.0, side * 13.0))
 
 func _build_ship() -> void:
@@ -76,15 +79,15 @@ func _build_ship() -> void:
 	ship_visual.scale = Vector3(0.82, 0.82, 0.82)
 
 func _build_corridor_section(section: Node3D, index: int) -> void:
-	var dark := _mat(Color(0.018, 0.022, 0.032), Color(0.003, 0.004, 0.009), 0.02, 0.91, 0.20)
-	var gunmetal := _mat(Color(0.080, 0.090, 0.115), Color(0.007, 0.008, 0.015), 0.05, 0.88, 0.22)
-	var steel := _mat(Color(0.31, 0.33, 0.38), Color(0.016, 0.018, 0.028), 0.10, 0.72, 0.24)
-	var pale := _mat(Color(0.62, 0.62, 0.66), Color(0.03, 0.028, 0.045), 0.16, 0.54, 0.27)
-	var deck := _mat(Color(0.30, 0.26, 0.35), Color(0.15, 0.050, 0.22), 0.45, 0.44, 0.28)
-	var deck_light := _mat(Color(0.46, 0.39, 0.52), Color(0.24, 0.07, 0.33), 0.62, 0.36, 0.23)
-	var cyan := _mat(Color(0.14, 0.91, 1.0), Color(0.0, 0.78, 1.0), 4.0, 0.14, 0.06)
-	var violet := _mat(Color(0.43, 0.15, 0.58), Color(0.54, 0.07, 0.78), 2.0, 0.20, 0.10)
-	var amber := _mat(Color(0.94, 0.34, 0.06), Color(1.0, 0.15, 0.01), 3.6, 0.15, 0.08)
+	var dark := _mat(Color(0.024, 0.029, 0.042), Color(0.003, 0.004, 0.009), 0.02, 0.91, 0.20)
+	var gunmetal := _mat(Color(0.105, 0.115, 0.145), Color(0.007, 0.008, 0.015), 0.05, 0.86, 0.22)
+	var steel := _mat(Color(0.38, 0.40, 0.45), Color(0.016, 0.018, 0.028), 0.10, 0.70, 0.24)
+	var pale := _mat(Color(0.68, 0.68, 0.70), Color(0.03, 0.028, 0.045), 0.16, 0.50, 0.27)
+	var deck := _mat(Color(0.29, 0.28, 0.33), Color(0.10, 0.045, 0.16), 0.30, 0.48, 0.28)
+	var deck_light := _mat(Color(0.46, 0.42, 0.50), Color(0.22, 0.07, 0.30), 0.50, 0.38, 0.23)
+	var cyan := _mat(Color(0.14, 0.91, 1.0), Color(0.0, 0.78, 1.0), 3.8, 0.14, 0.06)
+	var violet := _mat(Color(0.43, 0.15, 0.58), Color(0.54, 0.07, 0.78), 1.8, 0.20, 0.10)
+	var amber := _mat(Color(0.94, 0.34, 0.06), Color(1.0, 0.15, 0.01), 3.4, 0.15, 0.08)
 
 	_box(section, Vector3(0.0, -3.30, 0.0), Vector3(9.7, 0.34, SECTION_LENGTH), deck)
 	_box(section, Vector3(-2.62, -3.08, 0.0), Vector3(3.22, 0.10, SECTION_LENGTH * 0.95), deck_light)
@@ -138,7 +141,7 @@ func _build_corridor_section(section: Node3D, index: int) -> void:
 		var local_light := OmniLight3D.new()
 		local_light.position = Vector3(featured_side * 2.60, -0.18, -0.75)
 		local_light.light_color = Color(0.10, 0.60, 1.0) if index % 8 == 0 else Color(0.60, 0.18, 0.84)
-		local_light.light_energy = 3.8
+		local_light.light_energy = 3.5
 		local_light.omni_range = 5.8
 		section.add_child(local_light)
 
@@ -153,4 +156,4 @@ func _make_ui() -> void:
 		if child is CanvasLayer:
 			for control in child.get_children():
 				if control is Label and control.text.begins_with("VORTEX // RUNNER"):
-					control.text = "VORTEX // RUNNER 1.7 // REVIEW"
+					control.text = "VORTEX // RUNNER 1.8 // REVIEW"
