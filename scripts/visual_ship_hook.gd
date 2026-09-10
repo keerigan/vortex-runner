@@ -1,7 +1,6 @@
 extends "res://scripts/visual_overhaul.gd"
 
 func _add_ship_collisions() -> void:
-	# Slightly forgiving hitboxes matched to the smaller hero craft.
 	var body := CollisionShape3D.new()
 	var body_box := BoxShape3D.new()
 	body_box.size = Vector3(0.36, 0.21, 0.86)
@@ -37,25 +36,33 @@ func _make_world() -> void:
 	_build_camera_canopy()
 
 func _build_camera_canopy() -> void:
-	# Static near-camera architecture fills the otherwise empty portrait top third.
+	# Perspective ceiling: long machinery and pipes, no giant full-width bars near the lens.
 	var shell := Node3D.new()
 	shell.name = "CameraCanopy"
 	add_child(shell)
 	var dark := _mat(Color(0.022, 0.027, 0.040), Color(0.004, 0.005, 0.012), 0.03, 0.90, 0.20)
-	var steel := _mat(Color(0.26, 0.29, 0.36), Color(0.015, 0.018, 0.03), 0.10, 0.78, 0.20)
-	var pale := _mat(Color(0.52, 0.56, 0.64), Color(0.025, 0.03, 0.05), 0.12, 0.62, 0.22)
+	var gunmetal := _mat(Color(0.070, 0.082, 0.115), Color(0.006, 0.008, 0.015), 0.05, 0.88, 0.20)
+	var steel := _mat(Color(0.30, 0.34, 0.42), Color(0.018, 0.022, 0.038), 0.10, 0.76, 0.19)
+	var pale := _mat(Color(0.55, 0.59, 0.68), Color(0.025, 0.03, 0.05), 0.12, 0.62, 0.22)
 	var cyan := _mat(Color(0.12, 0.88, 1.0), Color(0.0, 0.72, 1.0), 3.6, 0.12, 0.06)
-	# Ceiling cassette spanning from the first moving section all the way over the camera.
-	_box(shell, Vector3(0.0, 2.18, 5.25), Vector3(9.4, 0.34, 10.5), dark)
-	for x: float in [-3.45, -1.72, 0.0, 1.72, 3.45]:
-		_box(shell, Vector3(x, 1.95, 5.25), Vector3(1.08, 0.17, 10.0), steel)
-	for z: float in [1.4, 4.2, 7.0, 9.4]:
-		_box(shell, Vector3(0.0, 1.72, z), Vector3(8.2, 0.17, 0.34), pale)
-	for x: float in [-3.05, -2.72, 2.72, 3.05]:
-		_cylinder(shell, Vector3(x, 1.63, 5.0), 0.095, 8.6, steel, Vector3(90.0, 0.0, 0.0))
-	# Only two inset strips near the transition, matching the reference's restrained lighting.
-	_box(shell, Vector3(-3.75, 1.68, 1.85), Vector3(0.07, 0.06, 2.2), cyan)
-	_box(shell, Vector3(3.75, 1.68, 1.85), Vector3(0.07, 0.06, 2.2), cyan)
+	# Main dark roof.
+	_box(shell, Vector3(0.0, 2.20, 5.1), Vector3(9.4, 0.34, 10.8), dark)
+	# Five long recessed channels produce strong perspective instead of horizontal bands.
+	for x: float in [-3.55, -1.80, 0.0, 1.80, 3.55]:
+		_box(shell, Vector3(x, 1.96, 5.0), Vector3(1.05, 0.16, 10.0), gunmetal)
+	# Cable/pipe bundles visible in the upper field.
+	for x: float in [-3.05, -2.72, -2.39, 2.39, 2.72, 3.05]:
+		_cylinder(shell, Vector3(x, 1.64, 5.0), 0.085, 8.7, steel, Vector3(90.0, 0.0, 0.0))
+	# Only distant transverse braces; near-camera braces are split at the sides.
+	for z: float in [0.8, 3.1]:
+		_box(shell, Vector3(0.0, 1.70, z), Vector3(8.1, 0.16, 0.30), pale)
+	for side: float in [-1.0, 1.0]:
+		for z: float in [5.6, 8.1]:
+			_box(shell, Vector3(side * 3.20, 1.72, z), Vector3(2.15, 0.16, 0.30), pale)
+		# Long recessed cyan rails like the reference roof strips.
+		_box(shell, Vector3(side * 3.82, 1.58, 4.4), Vector3(0.065, 0.055, 7.2), cyan)
+		# Large triangular-ish side brackets made from angled beams.
+		_box(shell, Vector3(side * 4.16, 1.28, 5.9), Vector3(0.20, 1.10, 2.6), steel, Vector3(0.0, 0.0, side * 13.0))
 
 func _build_ship() -> void:
 	super._build_ship()
@@ -75,7 +82,7 @@ func _build_corridor_section(section: Node3D, index: int) -> void:
 	var pale := _mat(Color(0.62, 0.62, 0.66), Color(0.03, 0.028, 0.045), 0.16, 0.54, 0.27)
 	var deck := _mat(Color(0.30, 0.26, 0.35), Color(0.15, 0.050, 0.22), 0.45, 0.44, 0.28)
 	var deck_light := _mat(Color(0.46, 0.39, 0.52), Color(0.24, 0.07, 0.33), 0.62, 0.36, 0.23)
-	var cyan := _mat(Color(0.14, 0.91, 1.0), Color(0.0, 0.78, 1.0), 4.2, 0.14, 0.06)
+	var cyan := _mat(Color(0.14, 0.91, 1.0), Color(0.0, 0.78, 1.0), 4.0, 0.14, 0.06)
 	var violet := _mat(Color(0.43, 0.15, 0.58), Color(0.54, 0.07, 0.78), 2.0, 0.20, 0.10)
 	var amber := _mat(Color(0.94, 0.34, 0.06), Color(1.0, 0.15, 0.01), 3.6, 0.15, 0.08)
 
@@ -146,4 +153,4 @@ func _make_ui() -> void:
 		if child is CanvasLayer:
 			for control in child.get_children():
 				if control is Label and control.text.begins_with("VORTEX // RUNNER"):
-					control.text = "VORTEX // RUNNER 1.6 // REVIEW"
+					control.text = "VORTEX // RUNNER 1.7 // REVIEW"
