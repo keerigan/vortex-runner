@@ -28,22 +28,47 @@ func _make_world() -> void:
 	_enhance_glow()
 	_add_vanishing_glow()
 
+# The lower layers build the ship with very hot emissive materials (engines at
+# energy 8-10) and strong on-board lights, which blows the hull into a white
+# blob once glow is on. We keep their ship exactly as-is and only clamp the
+# worst offenders afterwards, so it still glows but reads as a ship.
+func _build_ship() -> void:
+	super._build_ship()
+	_tame_ship(ship_visual)
+
+func _tame_ship(node: Node) -> void:
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			var mat := (child as MeshInstance3D).material_override
+			if mat is StandardMaterial3D:
+				var sm := mat as StandardMaterial3D
+				if sm.emission_enabled and sm.emission_energy_multiplier > 2.6:
+					sm.emission_energy_multiplier = 2.6
+		elif child is OmniLight3D:
+			var light := child as OmniLight3D
+			if light.light_energy > 5.0:
+				light.light_energy = 5.0
+		_tame_ship(child)
+
 func _enhance_glow() -> void:
 	# Lower layers already animate ambient/fog per biome but never touch glow or
 	# the tonemapper, so tuning them here is safe and persistent. Property access
 	# mirrors the (already CI-passing) idiom used by the biome layers.
-	var levels: Array[float] = [0.4, 0.85, 1.0, 1.0, 0.8, 0.55, 0.35]
+	# Restrained glow: only genuinely bright emissive edges bloom, and the halo
+	# stays tight. Filmic tonemap is kept because it rolls highlights off softly
+	# (less blown-out than the default linear mapping).
+	var levels: Array[float] = [0.2, 0.5, 0.7, 0.55, 0.3, 0.15, 0.08]
 	for child in get_children():
 		if child is WorldEnvironment and child.environment:
 			child.environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-			child.environment.tonemap_exposure = 1.10
+			child.environment.tonemap_exposure = 0.98
 			child.environment.glow_enabled = true
 			child.environment.glow_normalized = true
-			child.environment.glow_intensity = 1.15
-			child.environment.glow_strength = 1.05
-			child.environment.glow_bloom = 0.22
+			child.environment.glow_intensity = 0.70
+			child.environment.glow_strength = 0.90
+			child.environment.glow_bloom = 0.06
 			child.environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
-			child.environment.glow_hdr_threshold = 0.80
+			child.environment.glow_hdr_threshold = 1.10
 			for i in range(levels.size()):
 				child.environment.set_glow_level(i, levels[i])
 
@@ -62,7 +87,7 @@ func _add_vanishing_glow() -> void:
 		ring.rotation_degrees.x = 90.0
 		ring.position.z = -float(i) * 5.0
 		var c: Color = tints[i]
-		ring.material_override = _mat(c, c, 6.0 - float(i) * 1.4, 0.0, 0.1)
+		ring.material_override = _mat(c, c, 3.2 - float(i) * 0.8, 0.0, 0.1)
 		_glow_root.add_child(ring)
 		_glow_rings.append(ring)
 
@@ -121,7 +146,7 @@ func _update_camera(delta: float) -> void:
 # section so the floor reads as neon tech instead of a washed slab with a black
 # pit down the middle. As children of the section they inherit the curve.
 func _add_floor_glow(section: Node3D) -> void:
-	var line := _mat(Color(0.30, 0.90, 1.0), Color(0.10, 0.80, 1.0), 2.4, 0.10, 0.12)
+	var line := _mat(Color(0.30, 0.90, 1.0), Color(0.10, 0.80, 1.0), 1.5, 0.10, 0.12)
 	_box(section, Vector3(0.0, -3.19, 0.0), Vector3(0.20, 0.05, SECTION_LENGTH * 0.98), line)
 	for x: float in [-2.0, 2.0]:
 		_box(section, Vector3(x, -3.18, 0.0), Vector3(0.055, 0.04, SECTION_LENGTH * 0.94), line)
@@ -140,4 +165,4 @@ func _make_ui() -> void:
 		if child is CanvasLayer:
 			for control in child.get_children():
 				if control is Label and control.text.begins_with("VORTEX // RUNNER"):
-					control.text = "VORTEX // RUNNER 4.0 // NEON CURVE"
+					control.text = "VORTEX // RUNNER 4.2 // CALM SHIP"
