@@ -181,7 +181,11 @@ func _check_hits() -> void:
 	if not alive:
 		return
 	var sp := ship.global_position
-	var pad := Vector3(0.30, 0.20, 0.34) * hit_pad_scale   # approximate ship half-size
+	# Generous padding, especially in depth (z): at high speed an obstacle sweeps
+	# past the ship ~1 unit per physics frame, so a thin z tolerance was crossed
+	# in a single frame and the hit was missed. A wide z band guarantees a couple
+	# of test frames while the obstacle overlaps the ship, so contact registers.
+	var pad := Vector3(0.42, 0.30, 0.70) * hit_pad_scale   # approximate ship half-size
 	for child in obstacle_root.get_children():
 		var area := child as Area3D
 		if absf(area.position.z - sp.z) > 3.0:
@@ -197,7 +201,7 @@ func _check_hits() -> void:
 						_hit(ship)
 						return
 				elif shape is SphereShape3D:
-					if sp.distance_to(cs.global_position) < (shape as SphereShape3D).radius + 0.30:
+					if sp.distance_to(cs.global_position) < (shape as SphereShape3D).radius + pad.z:
 						_hit(ship)
 						return
 
