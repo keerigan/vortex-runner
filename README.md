@@ -66,6 +66,10 @@ Dans Godot :
     i-frames + bulle protectrice).
 - **Meilleur score** sauvegardé localement (`user://scores.cfg`).
 - **Game over** : score, record et « nouveau record », **rejouer en un tap**.
+- **Vaisseaux** : 4 appareils aux compromis distincts (Éclaireur polyvalent,
+  Blindé qui démarre avec un bouclier, Intercepteur rapide et généreux en
+  points mais risqué, Furtif à hitbox réduite), déblocables au meilleur score
+  et sélectionnables dans le menu (choix sauvegardé dans `user://ship.cfg`).
 
 ## Moteur
 

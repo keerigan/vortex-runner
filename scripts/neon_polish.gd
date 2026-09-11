@@ -29,6 +29,10 @@ const RECYCLE_Z := 11.6
 var _glow_root: Node3D
 var _glow_rings: Array[MeshInstance3D] = []
 
+# Scales the ship's effective collision padding in _check_hits (1.0 = default).
+# Upper layers (ship selection) set this per craft to tune survivability.
+var hit_pad_scale := 1.0
+
 func _make_world() -> void:
 	super._make_world()
 	_enhance_glow()
@@ -177,7 +181,7 @@ func _check_hits() -> void:
 	if not alive:
 		return
 	var sp := ship.global_position
-	var pad := Vector3(0.30, 0.20, 0.34)   # approximate ship half-size
+	var pad := Vector3(0.30, 0.20, 0.34) * hit_pad_scale   # approximate ship half-size
 	for child in obstacle_root.get_children():
 		var area := child as Area3D
 		if absf(area.position.z - sp.z) > 3.0:

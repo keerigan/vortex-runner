@@ -76,6 +76,21 @@ jobs:
           path: visual-review*.png
           if-no-files-found: error
 
+      - name: Smoke test main scene
+        run: |
+          # Actually boot the game scene (menu + a few seconds of idle frames)
+          # so runtime errors in _ready / the menu path fail CI. The game never
+          # quits on its own, so the timeout killing it (exit 124) is the
+          # expected success case; any other non-zero exit or an error line is a
+          # real failure.
+          rm -f smoke.log
+          set +e
+          timeout 15s xvfb-run -a -s "-screen 0 540x960x24" godot --display-driver x11 --audio-driver Dummy --rendering-method gl_compatibility --path . --resolution 540x960 res://main.tscn > smoke.log 2>&1
+          STATUS=$?
+          cat smoke.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds|Unable to create DisplayServer" smoke.log; then exit 1; fi
+          if [ "$STATUS" -ne 124 ] && [ "$STATUS" -ne 0 ]; then exit "$STATUS"; fi
+
       - name: Build Android APK
         run: |
           mkdir -p build/android
