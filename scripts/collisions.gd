@@ -18,8 +18,13 @@ extends "res://scripts/juice.gd"
 # is the single, predictable source of collisions.
 # ---------------------------------------------------------------------------
 
-const SHIP_PAD_X := 0.28
-const SHIP_PAD_Y := 0.20
+# Ship half-size added to each hazard silhouette. Sized to the visible hull so
+# a hazard that overlaps the ship on screen actually kills.
+const SHIP_PAD_X := 0.42
+const SHIP_PAD_Y := 0.26
+# Depth half-window: the ship and hazard both have thickness, so a hazard counts
+# while its body overlaps the ship's depth, not only at the exact centre plane.
+const Z_OVERLAP := 0.80
 
 func _reset_obstacle(area: Area3D, z: float) -> void:
 	super._reset_obstacle(area, z)
@@ -60,8 +65,9 @@ func _check_hits() -> void:
 		var znow := area.position.z
 		var zprev := float(area.get_meta("pz", znow))
 		area.set_meta("pz", znow)
-		# The hazard moves toward the camera; catch the frame it passes the ship.
-		if zprev < sp.z and znow >= sp.z:
+		# Hit while the hazard body overlaps the ship's depth, OR on the exact
+		# frame it sweeps past (the safety net against high-speed frame skips).
+		if absf(znow - sp.z) < Z_OVERLAP or (zprev < sp.z and znow >= sp.z):
 			var fpx := float(area.get_meta("fpx", 0.6)) + SHIP_PAD_X * hit_pad_scale
 			var fpy := float(area.get_meta("fpy", 0.6)) + SHIP_PAD_Y * hit_pad_scale
 			var ang := deg_to_rad(area.rotation_degrees.z)
