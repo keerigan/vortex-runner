@@ -109,9 +109,40 @@ func _update_biome_environment(delta:float,biome:int)->void:
 			child.environment.ambient_light_energy=lerpf(child.environment.ambient_light_energy,target_energy,clampf(delta*0.8,0,1))
 			child.environment.fog_density=lerpf(child.environment.fog_density,target_fog_density,clampf(delta*0.8,0,1))
 
+# Keep all static canopy geometry out of the camera frustum. The previous canopy
+# surrounded the camera and produced giant slabs/polygons across the top third.
+func _build_camera_canopy()->void:
+	pass
+
+# Recycle geometry as soon as it has safely passed the ship. Nothing needs to
+# travel all the way to the camera at z=7.85, where perspective made it explode
+# in apparent size and caused near-camera clipping.
+func _update_world(delta:float)->void:
+	var biome:=_current_biome()
+	_update_biome_environment(delta,biome)
+	for child in corridor_root.get_children():
+		var section:=child as Node3D
+		section.position.z+=speed*delta
+		if section.position.z>1.65:
+			section.position.z-=SECTION_COUNT*SECTION_LENGTH
+			var old_biome:=int(section.get_meta("biome",0))
+			if old_biome!=biome:
+				_rebuild_section_for_biome(section,biome,section.get_index())
+	for child in streak_root.get_children():
+		var streak:=child as Node3D
+		streak.position.z+=speed*delta*1.25
+		if streak.position.z>2.4:
+			streak.position.z=randf_range(-120.0,-80.0)
+	for child in obstacle_root.get_children():
+		var area:=child as Area3D
+		area.position.z+=speed*delta
+		area.rotation_degrees.z+=(16.0+speed*0.20)*delta
+		if area.position.z>2.2:
+			_reset_obstacle(area,randf_range(-190.0,-140.0))
+
 func _make_ui()->void:
 	super._make_ui()
 	for child in get_children():
 		if child is CanvasLayer:
 			for control in child.get_children():
-				if control is Label and control.text.begins_with("VORTEX // RUNNER"): control.text="VORTEX // RUNNER 3.3 // HAZARDS"
+				if control is Label and control.text.begins_with("VORTEX // RUNNER"): control.text="VORTEX // RUNNER 3.4 // CLEAN VIEW"
