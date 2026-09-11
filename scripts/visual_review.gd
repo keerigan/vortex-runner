@@ -15,12 +15,12 @@ func _save_frame(filename: String) -> bool:
 
 func _capture(game: Node, score_value: float, filename: String) -> bool:
 	game.score = score_value
-	# Force corridor sections to recycle immediately so the requested biome is visible.
+	var biome := game._current_biome()
 	for section in game.corridor_root.get_children():
-		section.position.z = 10.0
+		game._rebuild_section_for_biome(section, biome, section.get_index())
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(0.35).timeout
+	await get_tree().create_timer(0.45).timeout
 	return _save_frame(filename)
 
 func _ready() -> void:
@@ -42,7 +42,6 @@ func _ready() -> void:
 		get_tree().quit(1); return
 	if not await _capture(game, 2000.0, "visual-review-lab.png"):
 		get_tree().quit(1); return
-	# Keep legacy names for the existing review workflow / quick comparison.
 	if not _save_frame("visual-review.png"):
 		get_tree().quit(1); return
 	await get_tree().create_timer(1.0).timeout
