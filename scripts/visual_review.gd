@@ -29,7 +29,7 @@ func _capture_obstacles(game: Node) -> bool:
 	for section in game.corridor_root.get_children():
 		game._rebuild_section_for_biome(section, 0, section.get_index())
 	game.obstacle_root.visible = true
-	var fixed_positions: Array[Vector3] = [Vector3(-1.45,-0.20,-15.0), Vector3(1.30,0.28,-22.0), Vector3(-0.35,-0.42,-30.0)]
+	var fixed_positions: Array[Vector3] = [Vector3(-1.55,-0.15,-8.5), Vector3(1.45,0.30,-12.5), Vector3(-0.25,-0.48,-16.5)]
 	var count: int = mini(3, game.obstacle_root.get_child_count())
 	for i in range(count):
 		var area := game.obstacle_root.get_child(i) as Area3D
