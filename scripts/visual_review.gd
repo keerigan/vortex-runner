@@ -33,6 +33,8 @@ func _capture_obstacles(game: Node) -> bool:
 	var count: int = mini(3, game.obstacle_root.get_child_count())
 	for i in range(count):
 		var area := game.obstacle_root.get_child(i) as Area3D
+		area.set_meta("forced_hazard",i)
+		game._reset_obstacle(area,fixed_positions[i].z)
 		area.position = fixed_positions[i]
 		area.rotation_degrees = Vector3.ZERO
 	for i in range(count, game.obstacle_root.get_child_count()):
