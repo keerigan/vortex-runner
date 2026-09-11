@@ -8,12 +8,17 @@ on:
       - 'v*'
   workflow_dispatch:
 
+concurrency:
+  group: vortex-runner-main
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
 jobs:
   build-apk:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     container:
       image: barichello/godot-ci:4.7.2
 
@@ -50,9 +55,10 @@ jobs:
           apt-get install -y xvfb libxcursor1 libfontconfig1 libwayland-cursor0 libxkbcommon0 libxinerama1 libxi6 libxrandr2 libxrender1 libxext6 libgl1-mesa-dri
           rm -f visual-review*.png visual-review.log
           set +e
-          xvfb-run -a -s "-screen 0 540x960x24" godot --display-driver x11 --rendering-method gl_compatibility --path . --resolution 540x960 res://visual_review.tscn > visual-review.log 2>&1
+          timeout 45s xvfb-run -a -s "-screen 0 540x960x24" godot --display-driver x11 --rendering-method gl_compatibility --path . --resolution 540x960 res://visual_review.tscn > visual-review.log 2>&1
           STATUS=$?
           cat visual-review.log
+          if [ "$STATUS" -eq 124 ]; then echo "Visual review timed out"; exit 1; fi
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds|Unable to create DisplayServer" visual-review.log; then exit 1; fi
           if [ "$STATUS" -ne 0 ]; then exit "$STATUS"; fi
           test -s visual-review-industrial.png
