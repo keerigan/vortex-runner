@@ -41,17 +41,31 @@ Dans Godot :
 
 ## Roadmap
 
-- [ ] vrai modèle de vaisseau ;
+- [x] vrai modèle de vaisseau ;
 - [ ] réacteurs et particules ;
-- [ ] sensation de vitesse renforcée ;
-- [ ] tunnel courbe / vortex plus organique ;
-- [ ] plusieurs types d'obstacles ;
-- [ ] bonus et pickups ;
-- [ ] sons et musique ;
-- [ ] menu principal ;
-- [ ] meilleur score sauvegardé ;
+- [x] sensation de vitesse renforcée ;
+- [x] tunnel courbe / vortex plus organique ;
+- [x] plusieurs types d'obstacles ;
+- [x] bonus et pickups ;
+- [x] sons et musique ;
+- [x] menu principal ;
+- [x] meilleur score sauvegardé ;
 - [ ] optimisation Android ;
-- [ ] export APK/AAB automatisé.
+- [x] export APK/AAB automatisé.
+
+## Gameplay
+
+- **Menu principal** : le tunnel défile en fond, le meilleur score s'affiche, on
+  lance la partie avec **JOUER**.
+- **Montée de difficulté** : plus la distance augmente, plus les obstacles se
+  rapprochent (densité) et la vitesse de pointe grimpe.
+- **Bonus / pickups** :
+  - **orbe dorée** — points + multiplicateur de combo (jusqu'à ×7) qui décroît
+    si l'on cesse d'en ramasser ;
+  - **bouclier ◈ (vert)** — encaisse un choc au lieu de la mort (courtes
+    i-frames + bulle protectrice).
+- **Meilleur score** sauvegardé localement (`user://scores.cfg`).
+- **Game over** : score, record et « nouveau record », **rejouer en un tap**.
 
 ## Moteur
 
