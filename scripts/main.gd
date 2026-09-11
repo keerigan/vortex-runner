@@ -9,7 +9,7 @@ const JOYSTICK_SPEED := 3.7
 
 var speed := 13.0
 var max_speed := 60.0
-var acceleration := 0.62
+var acceleration := 0.54
 var score := 0.0
 var alive := true
 var elapsed := 0.0
