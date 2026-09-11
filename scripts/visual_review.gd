@@ -13,15 +13,34 @@ func _save_frame(filename: String) -> bool:
 	print("VISUAL_REVIEW_SAVED=" + path)
 	return true
 
-func _capture(game: Node, score_value: float, filename: String) -> bool:
+func _capture_biome(game: Node, score_value: float, filename: String) -> bool:
 	game.score = score_value
 	var biome := game._current_biome()
 	for section in game.corridor_root.get_children():
 		game._rebuild_section_for_biome(section, biome, section.get_index())
+	game.obstacle_root.visible = false
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().create_timer(0.25).timeout
 	return _save_frame(filename)
+
+func _capture_obstacles(game: Node) -> bool:
+	game.score = 0.0
+	for section in game.corridor_root.get_children():
+		game._rebuild_section_for_biome(section, 0, section.get_index())
+	game.obstacle_root.visible = true
+	var fixed_positions := [Vector3(-1.45,-0.20,-15.0), Vector3(1.30,0.28,-22.0), Vector3(-0.35,-0.42,-30.0)]
+	var count := mini(3, game.obstacle_root.get_child_count())
+	for i in range(count):
+		var area := game.obstacle_root.get_child(i) as Area3D
+		area.position = fixed_positions[i]
+		area.rotation_degrees = Vector3.ZERO
+	for i in range(count, game.obstacle_root.get_child_count()):
+		game.obstacle_root.get_child(i).visible = false
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().create_timer(0.25).timeout
+	return _save_frame("visual-review-obstacles.png")
 
 func _ready() -> void:
 	var scene := load("res://main.tscn") as PackedScene
@@ -36,13 +55,15 @@ func _ready() -> void:
 	game.set_physics_process(false)
 	game.set_process_input(false)
 	await get_tree().create_timer(0.35).timeout
-	if not await _capture(game, 0.0, "visual-review-industrial.png"):
+	if not await _capture_biome(game, 0.0, "visual-review-industrial.png"):
 		get_tree().quit(1); return
-	if not await _capture(game, 700.0, "visual-review-reactor.png"):
+	if not await _capture_biome(game, 700.0, "visual-review-reactor.png"):
 		get_tree().quit(1); return
-	if not await _capture(game, 1350.0, "visual-review-energy.png"):
+	if not await _capture_biome(game, 1350.0, "visual-review-energy.png"):
 		get_tree().quit(1); return
-	if not await _capture(game, 2000.0, "visual-review-lab.png"):
+	if not await _capture_biome(game, 2000.0, "visual-review-lab.png"):
+		get_tree().quit(1); return
+	if not await _capture_obstacles(game):
 		get_tree().quit(1); return
 	if not _save_frame("visual-review.png"):
 		get_tree().quit(1); return
