@@ -16,10 +16,10 @@ extends "res://scripts/neon_polish.gd"
 
 const SCORE_CONFIG := "user://scores.cfg"
 const PICKUP_COUNT := 6
-const CHAIN_WINDOW := 5.0     # seconds a chain survives without a fresh core
+const CHAIN_WINDOW := 6.0     # seconds a chain survives without a fresh core
 const CHAIN_MAX := 12
 const SHIELD_MAX := 1
-const DIFFICULTY_DISTANCE := 4200.0
+const DIFFICULTY_DISTANCE := 6500.0
 
 var best_score := 0
 var bonus_points := 0
@@ -63,7 +63,7 @@ func _difficulty() -> float:
 # hazards fill a shorter stretch of tunnel and arrive more often. The three
 # fixed-index opening hazards ignore z, so they are left exactly as-is.
 func _reset_obstacle(area: Area3D, z: float) -> void:
-	var dz := lerpf(z, z * 0.68, _difficulty())
+	var dz := lerpf(z, z * 0.82, _difficulty())
 	super._reset_obstacle(area, dz)
 
 # --- Frame update ---------------------------------------------------------
@@ -72,7 +72,7 @@ func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	if not alive:
 		return
-	max_speed = 60.0 + 6.0 * _difficulty()
+	max_speed = 58.0 + 5.0 * _difficulty()
 	chain_timer = maxf(0.0, chain_timer - delta)
 	if chain_timer <= 0.0:
 		chain = 0
@@ -106,7 +106,7 @@ func _reset_pickup(holder: Node3D, z: float) -> void:
 	var visual := holder.get_child(0) as Node3D
 	for c in visual.get_children():
 		c.queue_free()
-	var is_shield := randf() < 0.24
+	var is_shield := randf() < 0.30
 	if is_shield:
 		var green := _mat(Color(0.25, 1.0, 0.55), Color(0.05, 1.0, 0.45), 5.5, 0.0, 0.15)
 		var ring := TorusMesh.new()
