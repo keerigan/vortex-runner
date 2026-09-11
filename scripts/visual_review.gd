@@ -44,6 +44,18 @@ func _capture_obstacles(game: Node) -> bool:
 	await get_tree().create_timer(0.25).timeout
 	return _save_frame("visual-review-obstacles.png")
 
+func _capture_audio_menu(game: Node) -> bool:
+	if game.music_panel == null:
+		push_error("Audio menu unavailable in visual review")
+		return false
+	game.music_panel.visible = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().create_timer(0.2).timeout
+	var ok := _save_frame("visual-review-audio-menu.png")
+	game.music_panel.visible = false
+	return ok
+
 func _ready() -> void:
 	var scene := load("res://main.tscn") as PackedScene
 	if scene == null:
@@ -66,6 +78,8 @@ func _ready() -> void:
 	if not await _capture_biome(game, 2000.0, "visual-review-lab.png"):
 		get_tree().quit(1); return
 	if not await _capture_obstacles(game):
+		get_tree().quit(1); return
+	if not await _capture_audio_menu(game):
 		get_tree().quit(1); return
 	if not _save_frame("visual-review.png"):
 		get_tree().quit(1); return
