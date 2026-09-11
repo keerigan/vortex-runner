@@ -4,8 +4,8 @@ const SECTION_COUNT := 22
 const SECTION_LENGTH := 7.0
 const OBSTACLE_COUNT := 9
 const JOYSTICK_RADIUS := 180.0
-const JOYSTICK_DEADZONE := 0.26
-const JOYSTICK_SPEED := 3.7
+const JOYSTICK_DEADZONE := 0.20
+const JOYSTICK_SPEED := 4.6
 
 var speed := 13.0
 var max_speed := 60.0
@@ -354,7 +354,7 @@ func _update_ship(delta: float) -> void:
 		input = joystick_vector
 	if input.length() > JOYSTICK_DEADZONE:
 		var strength := (input.length() - JOYSTICK_DEADZONE) / (1.0 - JOYSTICK_DEADZONE)
-		strength = pow(clampf(strength, 0.0, 1.0), 1.75)
+		strength = pow(clampf(strength, 0.0, 1.0), 1.45)
 		var move := input.normalized() * strength * JOYSTICK_SPEED * delta
 		ship.position.x += move.x
 		ship.position.y -= move.y
