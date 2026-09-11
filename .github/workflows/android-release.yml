@@ -31,11 +31,8 @@ jobs:
         run: |
           mkdir -p ~/.local/share/godot/export_templates/
           mkdir -p ~/.config/
-          if [ -d /root/.config/godot ]; then
-            mv /root/.config/godot ~/.config/godot
-          fi
-          mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" \
-             "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          if [ -d /root/.config/godot ]; then mv /root/.config/godot ~/.config/godot; fi
+          mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           godot --version
 
       - name: Validate Godot project
@@ -44,30 +41,24 @@ jobs:
           godot --headless --verbose --path . --editor --quit > godot-validation.log 2>&1
           STATUS=$?
           cat godot-validation.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds" godot-validation.log; then
-            echo "Godot project validation failed"
-            exit 1
-          fi
-          if [ "$STATUS" -ne 0 ]; then
-            exit "$STATUS"
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds" godot-validation.log; then exit 1; fi
+          if [ "$STATUS" -ne 0 ]; then exit "$STATUS"; fi
 
       - name: Capture real visual review
         run: |
           apt-get update
           apt-get install -y xvfb libxcursor1 libfontconfig1 libwayland-cursor0 libxkbcommon0 libxinerama1 libxi6 libxrandr2 libxrender1 libxext6 libgl1-mesa-dri
-          rm -f visual-review.png visual-review-close.png visual-review.log
+          rm -f visual-review*.png visual-review.log
           set +e
           xvfb-run -a -s "-screen 0 540x960x24" godot --display-driver x11 --rendering-method gl_compatibility --path . --resolution 540x960 res://visual_review.tscn > visual-review.log 2>&1
           STATUS=$?
           cat visual-review.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds|Unable to create DisplayServer" visual-review.log; then
-            echo "Visual review rejected: Godot reported an error"
-            exit 1
-          fi
-          if [ "$STATUS" -ne 0 ]; then
-            exit "$STATUS"
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds|Unable to create DisplayServer" visual-review.log; then exit 1; fi
+          if [ "$STATUS" -ne 0 ]; then exit "$STATUS"; fi
+          test -s visual-review-industrial.png
+          test -s visual-review-reactor.png
+          test -s visual-review-energy.png
+          test -s visual-review-lab.png
           test -s visual-review.png
           test -s visual-review-close.png
 
@@ -75,9 +66,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: visual-review
-          path: |
-            visual-review.png
-            visual-review-close.png
+          path: visual-review*.png
           if-no-files-found: error
 
       - name: Build Android APK
@@ -87,13 +76,8 @@ jobs:
           godot --headless --verbose --path . --export-debug "Android" "${APK_PATH}" > godot-export.log 2>&1
           STATUS=$?
           cat godot-export.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds" godot-export.log; then
-            echo "APK rejected: Godot reported project errors"
-            exit 1
-          fi
-          if [ "$STATUS" -ne 0 ]; then
-            exit "$STATUS"
-          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing|out of bounds" godot-export.log; then exit 1; fi
+          if [ "$STATUS" -ne 0 ]; then exit "$STATUS"; fi
           test -f "${APK_PATH}"
           ls -lh "${APK_PATH}"
 
