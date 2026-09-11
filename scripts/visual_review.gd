@@ -13,6 +13,16 @@ func _save_frame(filename: String) -> bool:
 	print("VISUAL_REVIEW_SAVED=" + path)
 	return true
 
+func _capture(game: Node, score_value: float, filename: String) -> bool:
+	game.score = score_value
+	# Force corridor sections to recycle immediately so the requested biome is visible.
+	for section in game.corridor_root.get_children():
+		section.position.z = 10.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().create_timer(0.35).timeout
+	return _save_frame(filename)
+
 func _ready() -> void:
 	var scene := load("res://main.tscn") as PackedScene
 	if scene == null:
@@ -23,12 +33,19 @@ func _ready() -> void:
 	add_child(game)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(0.7).timeout
+	if not await _capture(game, 0.0, "visual-review-industrial.png"):
+		get_tree().quit(1); return
+	if not await _capture(game, 700.0, "visual-review-reactor.png"):
+		get_tree().quit(1); return
+	if not await _capture(game, 1350.0, "visual-review-energy.png"):
+		get_tree().quit(1); return
+	if not await _capture(game, 2000.0, "visual-review-lab.png"):
+		get_tree().quit(1); return
+	# Keep legacy names for the existing review workflow / quick comparison.
 	if not _save_frame("visual-review.png"):
-		get_tree().quit(1)
-		return
-	await get_tree().create_timer(2.5).timeout
+		get_tree().quit(1); return
+	await get_tree().create_timer(1.0).timeout
 	if not _save_frame("visual-review-close.png"):
-		get_tree().quit(1)
-		return
+		get_tree().quit(1); return
 	get_tree().quit()
