@@ -15,7 +15,7 @@ func _save_frame(filename: String) -> bool:
 
 func _capture_biome(game: Node, score_value: float, filename: String) -> bool:
 	game.score = score_value
-	var biome := game._current_biome()
+	var biome: int = int(game._current_biome())
 	for section in game.corridor_root.get_children():
 		game._rebuild_section_for_biome(section, biome, section.get_index())
 	game.obstacle_root.visible = false
@@ -29,8 +29,8 @@ func _capture_obstacles(game: Node) -> bool:
 	for section in game.corridor_root.get_children():
 		game._rebuild_section_for_biome(section, 0, section.get_index())
 	game.obstacle_root.visible = true
-	var fixed_positions := [Vector3(-1.45,-0.20,-15.0), Vector3(1.30,0.28,-22.0), Vector3(-0.35,-0.42,-30.0)]
-	var count := mini(3, game.obstacle_root.get_child_count())
+	var fixed_positions: Array[Vector3] = [Vector3(-1.45,-0.20,-15.0), Vector3(1.30,0.28,-22.0), Vector3(-0.35,-0.42,-30.0)]
+	var count: int = mini(3, game.obstacle_root.get_child_count())
 	for i in range(count):
 		var area := game.obstacle_root.get_child(i) as Area3D
 		area.position = fixed_positions[i]
