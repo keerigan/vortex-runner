@@ -20,7 +20,7 @@ func _capture(game: Node, score_value: float, filename: String) -> bool:
 		game._rebuild_section_for_biome(section, biome, section.get_index())
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(0.45).timeout
+	await get_tree().create_timer(0.25).timeout
 	return _save_frame(filename)
 
 func _ready() -> void:
@@ -33,7 +33,9 @@ func _ready() -> void:
 	add_child(game)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(0.7).timeout
+	game.set_physics_process(false)
+	game.set_process_input(false)
+	await get_tree().create_timer(0.35).timeout
 	if not await _capture(game, 0.0, "visual-review-industrial.png"):
 		get_tree().quit(1); return
 	if not await _capture(game, 700.0, "visual-review-reactor.png"):
@@ -44,7 +46,7 @@ func _ready() -> void:
 		get_tree().quit(1); return
 	if not _save_frame("visual-review.png"):
 		get_tree().quit(1); return
-	await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(0.25).timeout
 	if not _save_frame("visual-review-close.png"):
 		get_tree().quit(1); return
 	get_tree().quit()
