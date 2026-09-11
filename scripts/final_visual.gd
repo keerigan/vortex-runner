@@ -84,7 +84,7 @@ func _reset_obstacle(area:Area3D,z:float)->void:
 	if idx==0: area.position=Vector3(-1.10,-0.20,-21.0)
 	elif idx==1: area.position=Vector3(1.15,0.24,-33.0)
 	elif idx==2: area.position=Vector3(-0.45,-0.32,-45.0)
-	else: area.position=Vector3(randf_range(-3.0,3.0),randf_range(-1.85,1.0),z)
+	else: area.position=Vector3(randf_range(-3.3,3.3),randf_range(-2.3,1.2),z)
 	area.rotation_degrees.z=randf_range(-7.0,7.0)
 
 func _current_biome()->int:

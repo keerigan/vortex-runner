@@ -359,7 +359,7 @@ func _update_ship(delta: float) -> void:
 		ship.position.x += move.x
 		ship.position.y -= move.y
 	ship.position.x = clampf(ship.position.x, -3.55, 3.55)
-	ship.position.y = clampf(ship.position.y, -2.45, 1.35)
+	ship.position.y = clampf(ship.position.y, -2.2, 1.35)
 	ship_visual.rotation_degrees.z = lerpf(ship_visual.rotation_degrees.z, -input.x * 22.0, clampf(delta * 7.0, 0.0, 1.0))
 	ship_visual.rotation_degrees.x = lerpf(ship_visual.rotation_degrees.x, -4.0 + input.y * 7.0, clampf(delta * 6.0, 0.0, 1.0))
 
