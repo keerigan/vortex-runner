@@ -42,12 +42,12 @@ func _tame_ship(node: Node) -> void:
 			var mat := (child as MeshInstance3D).material_override
 			if mat is StandardMaterial3D:
 				var sm := mat as StandardMaterial3D
-				if sm.emission_enabled and sm.emission_energy_multiplier > 2.6:
-					sm.emission_energy_multiplier = 2.6
+				if sm.emission_enabled and sm.emission_energy_multiplier > 1.8:
+					sm.emission_energy_multiplier = 1.8
 		elif child is OmniLight3D:
 			var light := child as OmniLight3D
-			if light.light_energy > 5.0:
-				light.light_energy = 5.0
+			if light.light_energy > 4.0:
+				light.light_energy = 4.0
 		_tame_ship(child)
 
 func _enhance_glow() -> void:
@@ -57,18 +57,21 @@ func _enhance_glow() -> void:
 	# Restrained glow: only genuinely bright emissive edges bloom, and the halo
 	# stays tight. Filmic tonemap is kept because it rolls highlights off softly
 	# (less blown-out than the default linear mapping).
-	var levels: Array[float] = [0.2, 0.5, 0.7, 0.55, 0.3, 0.15, 0.08]
+	# Subtle glow: only the brightest neon edges bloom, and only slightly. No
+	# constant bloom, high HDR threshold, low intensity - a hint of neon, not a
+	# light show.
+	var levels: Array[float] = [0.10, 0.26, 0.34, 0.22, 0.10, 0.04, 0.0]
 	for child in get_children():
 		if child is WorldEnvironment and child.environment:
 			child.environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-			child.environment.tonemap_exposure = 0.98
+			child.environment.tonemap_exposure = 0.95
 			child.environment.glow_enabled = true
 			child.environment.glow_normalized = true
-			child.environment.glow_intensity = 0.70
-			child.environment.glow_strength = 0.90
-			child.environment.glow_bloom = 0.06
+			child.environment.glow_intensity = 0.42
+			child.environment.glow_strength = 0.80
+			child.environment.glow_bloom = 0.0
 			child.environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
-			child.environment.glow_hdr_threshold = 1.10
+			child.environment.glow_hdr_threshold = 1.30
 			for i in range(levels.size()):
 				child.environment.set_glow_level(i, levels[i])
 
@@ -83,11 +86,13 @@ func _add_vanishing_glow() -> void:
 		var torus := TorusMesh.new()
 		torus.inner_radius = 2.0 + float(i) * 0.7
 		torus.outer_radius = 2.28 + float(i) * 0.7
+		torus.rings = 24            # lighter than the default 64 for cheaper frames
+		torus.ring_segments = 10
 		ring.mesh = torus
 		ring.rotation_degrees.x = 90.0
 		ring.position.z = -float(i) * 5.0
 		var c: Color = tints[i]
-		ring.material_override = _mat(c, c, 3.2 - float(i) * 0.8, 0.0, 0.1)
+		ring.material_override = _mat(c, c, 2.0 - float(i) * 0.5, 0.0, 0.1)
 		_glow_root.add_child(ring)
 		_glow_rings.append(ring)
 
@@ -135,6 +140,37 @@ func _update_world(delta: float) -> void:
 		var goff := _curve_at(-_glow_root.position.z)
 		_glow_root.position.x = goff.x
 		_glow_root.position.y = -0.4 + goff.y
+	# Reliable, tunnelling-proof collisions (see _check_hits).
+	_check_hits()
+
+# The base game relies on Area3D.body_entered, but the ship is teleported by
+# direct position assignment every frame, so at high speed obstacles sweep past
+# the ship between physics ticks and the signal never fires (~half are missed).
+# We test every frame against the real collision shapes instead: an oriented
+# point-in-box / sphere test at the ship, padded by the ship's own size.
+func _check_hits() -> void:
+	if not alive:
+		return
+	var sp := ship.global_position
+	var pad := Vector3(0.30, 0.20, 0.34)   # approximate ship half-size
+	for child in obstacle_root.get_children():
+		var area := child as Area3D
+		if absf(area.position.z - sp.z) > 3.0:
+			continue
+		for c in area.get_children():
+			if c is CollisionShape3D:
+				var cs := c as CollisionShape3D
+				var shape := cs.shape
+				if shape is BoxShape3D:
+					var h: Vector3 = (shape as BoxShape3D).size * 0.5 + pad
+					var local: Vector3 = cs.global_transform.affine_inverse() * sp
+					if absf(local.x) < h.x and absf(local.y) < h.y and absf(local.z) < h.z:
+						_hit(ship)
+						return
+				elif shape is SphereShape3D:
+					if sp.distance_to(cs.global_position) < (shape as SphereShape3D).radius + 0.30:
+						_hit(ship)
+						return
 
 func _update_camera(delta: float) -> void:
 	super._update_camera(delta)
@@ -165,4 +201,4 @@ func _make_ui() -> void:
 		if child is CanvasLayer:
 			for control in child.get_children():
 				if control is Label and control.text.begins_with("VORTEX // RUNNER"):
-					control.text = "VORTEX // RUNNER 4.2 // CALM SHIP"
+					control.text = "VORTEX // RUNNER 4.3 // FIX HITS"
