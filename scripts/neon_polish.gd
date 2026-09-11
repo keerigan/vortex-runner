@@ -20,6 +20,12 @@ const CURVE_FREQ_X := 0.018
 const CURVE_AMP_Y := 1.0
 const CURVE_FREQ_Y := 0.024
 
+# Sections recycle only once they are fully behind the camera (~7.85), so a
+# whole block never visibly vanishes in front of the player. The base build
+# recycled at z=1.65 (about 6 units IN FRONT of the camera), which is what made
+# the tunnel "advance by blocks".
+const RECYCLE_Z := 11.6
+
 var _glow_root: Node3D
 var _glow_rings: Array[MeshInstance3D] = []
 
@@ -110,26 +116,45 @@ func _reset_obstacle(area: Area3D, z: float) -> void:
 	area.set_meta("base_x", area.position.x)
 	area.set_meta("base_y", area.position.y)
 
+# Reimplemented (instead of super) so sections recycle behind the camera.
+# Mirrors the base biome update (biome env + advance/recycle/rebuild + streaks +
+# obstacles) and folds in the curve, obstacle lanes and reliable collisions.
 func _update_world(delta: float) -> void:
-	super._update_world(delta)
-	# Corridor sections ride the centreline (their base is 0,0).
+	var biome := _current_biome()
+	_update_biome_environment(delta, biome)
+	var advance := speed * delta
+	# Corridor sections: advance, recycle only when behind the camera, ride curve.
 	for child in corridor_root.get_children():
 		var section := child as Node3D
+		section.position.z += advance
+		if section.position.z > RECYCLE_Z:
+			section.position.z -= SECTION_COUNT * SECTION_LENGTH
+			var old_biome := int(section.get_meta("biome", 0))
+			if old_biome != biome:
+				_rebuild_section_for_biome(section, biome, section.get_index())
 		var soff := _curve_at(-section.position.z)
 		section.position.x = soff.x
 		section.position.y = soff.y
-	# Streaks keep their fixed random lane; capture it once.
+	# Streaks (fixed random lane captured once).
 	for child in streak_root.get_children():
 		var streak := child as Node3D
+		streak.position.z += advance * 1.25
+		if streak.position.z > RECYCLE_Z:
+			streak.position.z = randf_range(-120.0, -80.0)
 		if not streak.has_meta("bx"):
 			streak.set_meta("bx", streak.position.x)
 			streak.set_meta("by", streak.position.y)
 		var koff := _curve_at(-streak.position.z)
 		streak.position.x = float(streak.get_meta("bx")) + koff.x
 		streak.position.y = float(streak.get_meta("by")) + koff.y
-	# Obstacles ride their recorded lane so they stay inside the curved tunnel.
+	# Obstacles recycle just after passing the ship (they must never reach the
+	# camera), and ride their recorded lane along the curve.
 	for child in obstacle_root.get_children():
 		var area := child as Area3D
+		area.position.z += advance
+		area.rotation_degrees.z += (16.0 + speed * 0.20) * delta
+		if area.position.z > 2.2:
+			_reset_obstacle(area, randf_range(-190.0, -140.0))
 		var bx := float(area.get_meta("base_x", area.position.x))
 		var by := float(area.get_meta("base_y", area.position.y))
 		var aoff := _curve_at(-area.position.z)
@@ -201,4 +226,4 @@ func _make_ui() -> void:
 		if child is CanvasLayer:
 			for control in child.get_children():
 				if control is Label and control.text.begins_with("VORTEX // RUNNER"):
-					control.text = "VORTEX // RUNNER 4.3 // FIX HITS"
+					control.text = "VORTEX // RUNNER 4.4 // NO POP"
