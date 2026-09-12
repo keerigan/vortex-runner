@@ -101,6 +101,10 @@ func _physics_process(delta: float) -> void:
 			var holder := child as Node3D
 			if not bool(holder.get_meta("active", false)):
 				continue
+			# Never magnet shields: they must be earned by steering into them, or
+			# the run becomes risk-free (auto-collected protection every time).
+			if int(holder.get_meta("type", 0)) == 1:
+				continue
 			var pz := holder.position.z
 			if pz > sp.z - 20.0 and pz < sp.z + 2.0:
 				holder.set_meta("bx", move_toward(float(holder.get_meta("bx", 0.0)), sp.x, 7.0 * delta))

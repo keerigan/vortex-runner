@@ -45,7 +45,7 @@ func _ready() -> void:
 	super._ready()
 	_load_best()
 	_update_best_label()
-	_core_sound = _make_tone(680.0, 1180.0, 0.12, 0.5)
+	_core_sound = _make_coin_sound()
 	_shield_sound = _make_tone(420.0, 780.0, 0.22, 0.5)
 	_shieldbreak_sound = _make_tone(900.0, 260.0, 0.20, 0.6)
 	fx_player = AudioStreamPlayer.new()
@@ -368,6 +368,39 @@ func _make_tone(f0: float, f1: float, duration: float, volume: float) -> AudioSt
 		var env := sin(PI * prog)
 		var sample := sin(TAU * freq * t) * env * volume
 		sample = tanh(sample * 1.2) * 0.9
+		var value := int(clampf(sample, -1.0, 1.0) * 32767.0)
+		data[i * 2] = value & 0xff
+		data[i * 2 + 1] = (value >> 8) & 0xff
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = false
+	wav.data = data
+	return wav
+
+# A pleasant two-note coin chime (low note then a bright one, each with a fast
+# decay) instead of the old rising "bip" glissando, which grew fatiguing when a
+# chain collects cores rapidly. Phase is accumulated so the note change never
+# clicks; a soft octave partial adds sparkle.
+func _make_coin_sound() -> AudioStreamWAV:
+	var sample_rate := 44100
+	var duration := 0.16
+	var frame_count := int(sample_rate * duration)
+	var data := PackedByteArray()
+	data.resize(frame_count * 2)
+	var switch := 0.05          # first (lower) note briefly, then the higher rings
+	var phase := 0.0
+	var phase_oct := 0.0
+	for i in range(frame_count):
+		var t := float(i) / float(sample_rate)
+		var freq := 988.0 if t < switch else 1319.0   # B5 -> E6
+		phase += TAU * freq / float(sample_rate)
+		phase_oct += TAU * freq * 2.0 / float(sample_rate)
+		var local := t if t < switch else (t - switch)
+		var env := exp(-local * 18.0)
+		var atk := clampf(local / 0.003, 0.0, 1.0)
+		var sample := (sin(phase) * 0.9 + sin(phase_oct) * 0.28) * env * atk * 0.34
+		sample = tanh(sample * 1.05) * 0.9
 		var value := int(clampf(sample, -1.0, 1.0) * 32767.0)
 		data[i * 2] = value & 0xff
 		data[i * 2 + 1] = (value >> 8) & 0xff
