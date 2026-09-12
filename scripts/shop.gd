@@ -153,8 +153,8 @@ func _build_shop_ui() -> void:
 			mv.move_child(_menu_coins_label, 3)
 			var shop_btn := Button.new()
 			shop_btn.text = "🛒  BOUTIQUE"
-			shop_btn.custom_minimum_size = Vector2(300, 60)
-			shop_btn.add_theme_font_size_override("font_size", 24)
+			shop_btn.custom_minimum_size = Vector2(460, 96)
+			shop_btn.add_theme_font_size_override("font_size", 38)
 			shop_btn.pressed.connect(_open_shop)
 			mv.add_child(shop_btn)
 	if _over_panel:
@@ -183,8 +183,8 @@ func _build_shop_panel(layer: CanvasLayer) -> void:
 	box.add_child(_shop_row("fastboost", "SURCHAUFFE RAPIDE", "La jauge se remplit +25 %"))
 	var close := Button.new()
 	close.text = "FERMER"
-	close.custom_minimum_size = Vector2(200, 54)
-	close.add_theme_font_size_override("font_size", 20)
+	close.custom_minimum_size = Vector2(300, 84)
+	close.add_theme_font_size_override("font_size", 30)
 	close.pressed.connect(_close_shop)
 	box.add_child(close)
 
@@ -203,8 +203,8 @@ func _shop_row(kind: String, name: String, desc: String) -> Control:
 	texts.add_child(d)
 	row.add_child(texts)
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(128, 54)
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.custom_minimum_size = Vector2(176, 84)
+	btn.add_theme_font_size_override("font_size", 28)
 	btn.pressed.connect(_buy.bind(kind))
 	row.add_child(btn)
 	_buy_buttons[kind] = btn

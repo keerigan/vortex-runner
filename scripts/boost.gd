@@ -16,7 +16,7 @@ const BOOST_PER_NEARMISS := 0.16
 const BOOST_PER_CORE := 0.22
 const BOOST_PASSIVE_PER_SEC := 0.05
 const OVERDRIVE_SPEED_MUL := 1.30
-const BAR_W := 150.0
+const BAR_W := 185.0
 
 var _boost_gain_mul := 1.0    # raised by the shop's "fast boost" upgrade
 var _boost := 0.0
