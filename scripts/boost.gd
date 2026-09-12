@@ -12,8 +12,9 @@ extends "res://scripts/health.gd"
 # ---------------------------------------------------------------------------
 
 const OVERDRIVE_MS := 4000
-const BOOST_PER_NEARMISS := 0.09
-const BOOST_PER_CORE := 0.12
+const BOOST_PER_NEARMISS := 0.16
+const BOOST_PER_CORE := 0.22
+const BOOST_PASSIVE_PER_SEC := 0.05
 const OVERDRIVE_SPEED_MUL := 1.30
 const BAR_W := 150.0
 
@@ -112,6 +113,8 @@ func _physics_process(delta: float) -> void:
 			_od_accum -= float(whole)
 		if ship_visual:
 			ship_visual.visible = true      # solid (invincible), not the i-frame blink
+	elif started and alive:
+		_add_boost(BOOST_PASSIVE_PER_SEC * delta)   # slow trickle so it always builds
 	_update_boost_ui()
 
 func _update_boost_ui() -> void:
