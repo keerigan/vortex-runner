@@ -21,6 +21,10 @@ var streak := 0
 var challenge_done := false
 var _ch_base := 0
 var _daily_bonus := 0
+# Today's challenge is deterministic per date; cache it so the per-frame check
+# never re-instantiates RandomNumberGenerators.
+var _cd_type := ""
+var _cd_target := 0
 
 var _daily_streak_label: Label
 var _daily_ch_label: Label
@@ -28,9 +32,14 @@ var _daily_toast: Label
 
 func _ready() -> void:
 	_load_daily()
+	_recompute_challenge()
 	super._ready()
 	_build_daily_ui()
 	_refresh_daily_ui()
+
+func _recompute_challenge() -> void:
+	_cd_type = _ch_type()
+	_cd_target = _ch_target()
 
 # --- Date / challenge definition (deterministic per day) -------------------
 
@@ -53,8 +62,8 @@ func _ch_target() -> int:
 	return 10
 
 func _daily_desc() -> String:
-	var target := _ch_target()
-	match _ch_type():
+	var target := _cd_target
+	match _cd_type:
 		"score": return "%d pts" % target
 		"cores": return "%d orbes" % target
 		"nearmiss": return "%d frôlements" % target
@@ -97,7 +106,8 @@ func _check_new_day() -> void:
 	coins += _daily_bonus
 	last_day = today
 	challenge_done = false
-	_ch_base = _lt(_ch_type())          # snapshot so today's progress starts at 0
+	_recompute_challenge()
+	_ch_base = _lt(_cd_type)          # snapshot so today's progress starts at 0
 	_save_daily()
 	_save_shop()
 	_update_coin_labels()
@@ -107,7 +117,7 @@ func _check_new_day() -> void:
 func _check_daily_challenge() -> void:
 	if challenge_done:
 		return
-	if _lt(_ch_type()) - _ch_base >= _ch_target():
+	if _lt(_cd_type) - _ch_base >= _cd_target:
 		challenge_done = true
 		coins += DAILY_REWARD
 		_save_daily()
@@ -153,8 +163,8 @@ func _refresh_daily_ui() -> void:
 	if _daily_streak_label:
 		_daily_streak_label.text = "🔥 Série : %d j" % streak
 	if _daily_ch_label:
-		var prog := clampi(_lt(_ch_type()) - _ch_base, 0, _ch_target())
-		var status := "✓" if challenge_done else "%d/%d" % [prog, _ch_target()]
+		var prog := clampi(_lt(_cd_type) - _ch_base, 0, _cd_target)
+		var status := "✓" if challenge_done else "%d/%d" % [prog, _cd_target]
 		_daily_ch_label.text = "Défi du jour : %s  %s" % [_daily_desc(), status]
 
 func _show_daily_toast(text: String) -> void:

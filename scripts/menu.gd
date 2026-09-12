@@ -28,7 +28,10 @@ func _ready() -> void:
 	_build_menu_ui()
 	if _skip_intro:
 		_skip_intro = false
-		_begin_game()
+		if _menu_panel:
+			_menu_panel.visible = false
+		# Defer so the whole _ready chain (upper layers' HUD) is built first.
+		call_deferred("_begin_game")
 	else:
 		_show_menu()
 

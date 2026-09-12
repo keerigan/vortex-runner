@@ -93,7 +93,7 @@ func _make_world() -> void:
 	key.rotation_degrees = Vector3(-34, -20, 0)
 	key.light_color = Color(0.64, 0.72, 1.0)
 	key.light_energy = 2.0
-	key.shadow_enabled = true
+	key.shadow_enabled = false   # perf: shadows are costly in gl_compatibility, barely read on a scrolling tunnel
 	add_child(key)
 
 	# Fixed light zones: geometry moving through them gives much richer shading.
