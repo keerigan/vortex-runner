@@ -55,6 +55,7 @@ var _continue_deadline := 0
 var _continue_cost := 0
 var _continue_panel: Control
 var _continue_timer_label: Label
+var _continue_coins_label: Label
 var _continue_bar: ProgressBar
 var _continue_btn: Button
 
@@ -253,6 +254,8 @@ func _build_continue_panel() -> void:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(box)
 	box.add_child(_label("CONTINUER ?", 52, Color(1.0, 0.85, 0.3)))
+	_continue_coins_label = _label("PIÈCES : 0", 34, Color(1.0, 0.82, 0.35))
+	box.add_child(_continue_coins_label)
 	_continue_timer_label = _label("30 s", 40, Color(0.9, 0.95, 1.0))
 	box.add_child(_continue_timer_label)
 	_continue_bar = ProgressBar.new()
@@ -300,6 +303,9 @@ func _offer_continue(cost: int) -> void:
 		game_over_label.visible = false
 	if _pause_button:
 		_pause_button.visible = false
+	if _continue_coins_label:
+		# Spendable = banked coins minus this death's not-yet-final payout.
+		_continue_coins_label.text = "PIÈCES : %d" % (coins - _last_payout)
 	if _continue_btn:
 		_continue_btn.text = "CONTINUER  -%d ⛁" % cost
 	if _continue_bar:
