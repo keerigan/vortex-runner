@@ -72,7 +72,7 @@ func _build_corridor_section(section: Node3D, index: int) -> void:
 		for angle: float in [0.0, 45.0, 90.0, 135.0]:
 			_box(section, Vector3(side * 2.82, -0.55, -1.0), Vector3(0.10, 1.35, 0.12), pale, Vector3(angle, 0, 0))
 	# Local lights move with the modular tunnel and actually shade its surfaces.
-	if index % 3 == 0:
+	if index % 5 == 0:
 		var local_light := OmniLight3D.new()
 		local_light.position = Vector3(-2.7 if index % 2 == 0 else 2.7, 0.25, -1.4)
 		local_light.light_color = Color(0.06, 0.68, 1.0) if index % 2 == 0 else Color(0.70, 0.16, 0.90)
