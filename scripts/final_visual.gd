@@ -88,7 +88,7 @@ func _reset_obstacle(area:Area3D,z:float)->void:
 	area.rotation_degrees.z=randf_range(-7.0,7.0)
 
 func _current_biome()->int:
-	return int(floor(score / BIOME_LENGTH)) % 4
+	return int(floor(score / BIOME_LENGTH)) % 16
 
 func _build_corridor_section(section:Node3D,index:int)->void:
 	super._build_corridor_section(section,index)
@@ -127,7 +127,7 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,1.65,0),Vector3(0.10,0.08,SECTION_LENGTH*0.78),cyan)
 		if index%3==1:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.15,-0.8); light.light_color=Color(0.35,0.18,1.0); light.light_energy=3.0; light.omni_range=5.6; section.add_child(light)
-	else:
+	elif biome==3:
 		# Lab sector: bright white hard-surface panels, cool lighting and reduced visual noise.
 		var white:=_mat(Color(0.72,0.76,0.84),Color(0.05,0.07,0.11),0.28,0.36,0.16)
 		var lightmat:=_mat(Color(0.72,0.94,1.0),Color(0.35,0.80,1.0),2.2,0.10,0.04)
@@ -139,6 +139,179 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 		for x:float in [-1.40,1.40]: _box(section,Vector3(x,-3.03,0),Vector3(0.035,0.025,SECTION_LENGTH*0.92),seam)
 		if index%4==0:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.8,-0.5); light.light_color=Color(0.72,0.88,1.0); light.light_energy=3.6; light.omni_range=6.2; section.add_child(light)
+	elif biome==4:
+		# Cryo sector: frozen tunnel - pale blue ice, frosted panels and angled crystal shards.
+		var ice:=_mat(Color(0.62,0.82,0.95),Color(0.10,0.30,0.52),0.9,0.10,0.06)
+		var frost:=_mat(Color(0.80,0.90,0.98),Color(0.20,0.36,0.50),0.5,0.20,0.10)
+		var deep:=_mat(Color(0.10,0.20,0.34),Color(0.02,0.05,0.10),0.10,0.62,0.20)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.30,-0.35,0),Vector3(0.22,4.3,SECTION_LENGTH*0.90),deep,Vector3(0,0,side*6))
+			_box(section,Vector3(side*3.98,0.85,0),Vector3(0.06,0.10,SECTION_LENGTH*0.92),ice)
+			# Crystal shards jutting from the walls at a few points along the section.
+			for z:float in [-2.2,0.0,2.2]:
+				_box(section,Vector3(side*3.75,-1.9,z),Vector3(0.16,0.9,0.16),frost,Vector3(side*18,0,side*24))
+		for x:float in [-2.6,0.0,2.6]: _box(section,Vector3(x,2.02,0),Vector3(0.5,0.5,0.5),ice,Vector3(45,45,0))
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.05,0.03,SECTION_LENGTH*0.9),ice)
+		if index%3==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.4,-1.0); light.light_color=Color(0.45,0.78,1.0); light.light_energy=3.0; light.omni_range=5.8; section.add_child(light)
+	elif biome==5:
+		# Toxic sector: acid-green haze, hazard bands and dripping green pipes.
+		var toxic:=_mat(Color(0.45,0.85,0.10),Color(0.30,0.90,0.0),3.6,0.14,0.08)
+		var pipe:=_mat(Color(0.20,0.26,0.14),Color(0.02,0.04,0.005),0.10,0.80,0.22)
+		var warn:=_mat(Color(0.85,0.80,0.10),Color(0.9,0.75,0.0),2.6,0.16,0.10)
+		for side:float in [-1.0,1.0]:
+			for y:float in [-1.75,-0.55,0.65]: _cylinder(section,Vector3(side*4.02,y,0),0.10,SECTION_LENGTH*0.90,pipe,Vector3(90,0,0))
+			_box(section,Vector3(side*4.26,1.05,0),Vector3(0.08,0.12,SECTION_LENGTH*0.85),toxic)
+			_box(section,Vector3(side*3.72,-1.15,0),Vector3(0.05,0.06,SECTION_LENGTH*0.82),toxic)
+		for z:float in [-2.4,0.0,2.4]: _box(section,Vector3(0,2.02,z),Vector3(6.6,0.12,0.5),warn,Vector3(0,0,0))
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.06,0.04,SECTION_LENGTH*0.9),toxic)
+		if index%3==1:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,-0.3,-1.0); light.light_color=Color(0.45,0.95,0.10); light.light_energy=3.0; light.omni_range=5.6; section.add_child(light)
+	elif biome==6:
+		# Void sector: open deep-space corridor - sparse thin ring frames and star specks, minimal walls.
+		var frame:=_mat(Color(0.30,0.34,0.46),Color(0.04,0.06,0.12),0.4,0.55,0.20)
+		var star:=_mat(Color(0.85,0.90,1.0),Color(0.7,0.8,1.0),4.0,0.0,0.05)
+		var edge:=_mat(Color(0.16,0.22,0.42),Color(0.10,0.18,0.55),2.0,0.10,0.10)
+		# A slim structural ring every so often instead of solid walls -> feels open.
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.5,-0.3,0),Vector3(0.10,4.0,0.28),frame)
+			_box(section,Vector3(side*4.02,0.9,0),Vector3(0.05,0.06,SECTION_LENGTH*0.9),edge)
+		_box(section,Vector3(0,2.35,0),Vector3(0.28,0.10,SECTION_LENGTH*0.9),edge)
+		_box(section,Vector3(0,-3.15,0),Vector3(0.28,0.06,SECTION_LENGTH*0.9),edge)
+		# Distant star specks scattered along the run.
+		for pt:Vector3 in [Vector3(-3.4,1.7,-2.0),Vector3(3.1,-2.1,0.4),Vector3(-2.4,-1.3,2.2),Vector3(2.7,1.9,-1.4)]:
+			_box(section,pt,Vector3(0.08,0.08,0.08),star)
+		if index%3==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.2,-1.2); light.light_color=Color(0.30,0.42,0.9); light.light_energy=2.4; light.omni_range=6.4; section.add_child(light)
+	elif biome==7:
+		# Temple sector: warm gold and bronze - ornate pillars and trim, richer light.
+		var gold:=_mat(Color(0.85,0.66,0.22),Color(0.55,0.36,0.05),1.6,0.70,0.18)
+		var bronze:=_mat(Color(0.42,0.30,0.14),Color(0.10,0.05,0.01),0.20,0.75,0.22)
+		var glow:=_mat(Color(1.0,0.82,0.35),Color(1.0,0.7,0.15),3.2,0.20,0.10)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.30,-0.35,0),Vector3(0.34,4.4,SECTION_LENGTH*0.92),bronze)
+			for z:float in [-2.3,0.0,2.3]:
+				_box(section,Vector3(side*4.02,-0.5,z),Vector3(0.30,3.6,0.5),gold)
+			_box(section,Vector3(side*3.74,1.0,0),Vector3(0.06,0.09,SECTION_LENGTH*0.9),glow)
+		for x:float in [-2.6,0.0,2.6]: _box(section,Vector3(x,2.05,0),Vector3(0.9,0.16,SECTION_LENGTH*0.86),gold)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.06,0.04,SECTION_LENGTH*0.9),glow)
+		if index%4==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.6,-0.8); light.light_color=Color(1.0,0.78,0.35); light.light_energy=3.6; light.omni_range=6.0; section.add_child(light)
+	elif biome==8:
+		# Storm sector: electric violet/magenta neon arcs and charged rails.
+		var dark:=_mat(Color(0.12,0.08,0.20),Color(0.02,0.01,0.05),0.10,0.70,0.20)
+		var violet:=_mat(Color(0.60,0.20,1.0),Color(0.55,0.10,1.0),4.4,0.12,0.06)
+		var magenta:=_mat(Color(1.0,0.18,0.72),Color(1.0,0.05,0.6),4.0,0.12,0.06)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.34,-0.35,0),Vector3(0.26,4.3,SECTION_LENGTH*0.9),dark,Vector3(0,0,side*6))
+			_box(section,Vector3(side*3.9,0.55,0),Vector3(0.06,0.08,SECTION_LENGTH*0.92),violet)
+			# Zig-zag neon arcs down the wall.
+			for z:float in [-2.2,0.0,2.2]:
+				_box(section,Vector3(side*3.7,-1.4,z),Vector3(0.05,1.4,0.05),magenta,Vector3(0,0,side*30))
+		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,2.02,0),Vector3(0.10,0.10,SECTION_LENGTH*0.8),violet)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.06,0.05,SECTION_LENGTH*0.9),magenta)
+		if index%3==1:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.1,-1.0); light.light_color=Color(0.7,0.2,1.0); light.light_energy=3.2; light.omni_range=5.8; section.add_child(light)
+	elif biome==9:
+		# Abyss sector: deep-sea - dark teal, glowing bio-luminescent pods and kelp-like columns.
+		var deep:=_mat(Color(0.05,0.16,0.20),Color(0.01,0.05,0.07),0.10,0.66,0.26)
+		var bio:=_mat(Color(0.20,0.95,0.85),Color(0.0,0.85,0.75),3.4,0.10,0.08)
+		var kelp:=_mat(Color(0.08,0.34,0.28),Color(0.02,0.12,0.10),0.20,0.72,0.24)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.34,-0.35,0),Vector3(0.30,4.4,SECTION_LENGTH*0.9),deep)
+			for z:float in [-2.2,0.0,2.2]:
+				_cylinder(section,Vector3(side*3.9,-0.6,z),0.10,3.4,kelp,Vector3(0,0,side*8))
+				_box(section,Vector3(side*3.72,randf_range(-1.6,0.8),z),Vector3(0.18,0.18,0.18),bio)
+		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,2.02,0),Vector3(0.06,0.06,SECTION_LENGTH*0.86),bio)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.05,0.04,SECTION_LENGTH*0.9),bio)
+		if index%3==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,-0.2,-1.0); light.light_color=Color(0.10,0.80,0.85); light.light_energy=2.8; light.omni_range=6.0; section.add_child(light)
+	elif biome==10:
+		# Ruins sector: weathered sandstone blocks, broken pillars and warm dust.
+		var sand:=_mat(Color(0.68,0.56,0.36),Color(0.14,0.10,0.04),0.30,0.34,0.40)
+		var stone:=_mat(Color(0.50,0.42,0.30),Color(0.08,0.06,0.03),0.20,0.55,0.44)
+		var moss:=_mat(Color(0.36,0.46,0.20),Color(0.05,0.09,0.02),0.15,0.60,0.40)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.30,-0.35,0),Vector3(0.36,4.3,SECTION_LENGTH*0.92),sand)
+			for z:float in [-2.3,0.0,2.3]:
+				_box(section,Vector3(side*3.96,-0.4 + (float((index+int(z))%3)*0.4),z),Vector3(0.5,2.6,0.6),stone,Vector3(0,0,side*4))
+			_box(section,Vector3(side*3.7,-2.6,0),Vector3(0.10,0.10,SECTION_LENGTH*0.8),moss)
+		for x:float in [-2.6,0.0,2.6]: _box(section,Vector3(x,2.04,0),Vector3(1.0,0.22,SECTION_LENGTH*0.7),sand,Vector3(0,0,0))
+		if index%4==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.5,-0.8); light.light_color=Color(1.0,0.80,0.50); light.light_energy=3.2; light.omni_range=6.0; section.add_child(light)
+	elif biome==11:
+		# Circuit sector: green PCB - traces, solder pads and chip blocks.
+		var board:=_mat(Color(0.04,0.24,0.12),Color(0.01,0.06,0.03),0.14,0.55,0.30)
+		var trace:=_mat(Color(0.75,0.85,0.30),Color(0.35,0.55,0.05),1.4,0.60,0.20)
+		var chip:=_mat(Color(0.10,0.11,0.13),Color(0.01,0.01,0.02),0.10,0.70,0.24)
+		var led:=_mat(Color(0.30,1.0,0.40),Color(0.10,1.0,0.20),3.6,0.10,0.08)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.34,-0.35,0),Vector3(0.30,4.4,SECTION_LENGTH*0.9),board)
+			for y:float in [-1.6,-0.4,0.8]: _box(section,Vector3(side*3.94,y,0),Vector3(0.05,0.05,SECTION_LENGTH*0.9),trace)
+			for z:float in [-2.2,0.0,2.2]:
+				_box(section,Vector3(side*3.86,-1.2,z),Vector3(0.4,0.5,0.4),chip)
+				_box(section,Vector3(side*3.66,-1.2,z),Vector3(0.06,0.06,0.06),led)
+		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,2.02,0),Vector3(0.05,0.05,SECTION_LENGTH*0.86),trace)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.05,0.04,SECTION_LENGTH*0.9),trace)
+		if index%3==1:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.1,-1.0); light.light_color=Color(0.30,1.0,0.40); light.light_energy=2.8; light.omni_range=5.6; section.add_child(light)
+	elif biome==12:
+		# Volcano sector: black basalt with glowing lava cracks in the floor.
+		var rock:=_mat(Color(0.10,0.07,0.06),Color(0.02,0.01,0.005),0.06,0.86,0.34)
+		var lava:=_mat(Color(1.0,0.42,0.05),Color(1.0,0.25,0.0),5.0,0.10,0.10)
+		var ember:=_mat(Color(1.0,0.62,0.15),Color(1.0,0.4,0.0),3.6,0.10,0.10)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.34,-0.35,0),Vector3(0.34,4.4,SECTION_LENGTH*0.9),rock,Vector3(0,0,side*5))
+			_box(section,Vector3(side*3.9,-1.6,0),Vector3(0.06,0.07,SECTION_LENGTH*0.9),lava)
+		# Lava rivers running along the floor.
+		for x:float in [-1.8,0.0,1.8]: _box(section,Vector3(x,-3.16,0),Vector3(0.22,0.05,SECTION_LENGTH*0.92),lava)
+		for z:float in [-2.3,0.0,2.3]: _box(section,Vector3(0,-3.1,z),Vector3(SECTION_LENGTH*0.0+3.4,0.05,0.16),ember)
+		if index%3==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,-2.2,-1.0); light.light_color=Color(1.0,0.35,0.05); light.light_energy=3.6; light.omni_range=6.0; section.add_child(light)
+	elif biome==13:
+		# Cavern sector: rough dark rock walls studded with glowing crystals.
+		var rock:=_mat(Color(0.14,0.13,0.16),Color(0.02,0.02,0.03),0.08,0.88,0.40)
+		var crystal:=_mat(Color(0.55,0.35,0.95),Color(0.55,0.20,1.0),3.6,0.10,0.10)
+		var crystal2:=_mat(Color(0.35,0.85,0.95),Color(0.10,0.75,1.0),3.4,0.10,0.10)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.30,-0.35,0),Vector3(0.5,4.5,SECTION_LENGTH*0.9),rock,Vector3(0,0,side*7))
+			for z:float in [-2.2,0.0,2.2]:
+				var cm := crystal if (index+int(z))%2==0 else crystal2
+				_box(section,Vector3(side*3.7,-1.6,z),Vector3(0.16,0.8,0.16),cm,Vector3(side*20,0,side*30))
+				_box(section,Vector3(side*3.55,1.3,z),Vector3(0.12,0.5,0.12),cm,Vector3(side*-16,0,side*-24))
+		for x:float in [-2.0,0.0,2.0]: _box(section,Vector3(x,2.15,0),Vector3(0.14,0.6,0.14),crystal,Vector3(180,0,0))
+		if index%3==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.0,-1.2); light.light_color=Color(0.5,0.3,1.0); light.light_energy=2.8; light.omni_range=6.0; section.add_child(light)
+	elif biome==14:
+		# Factory sector: heavy machinery, conveyor rollers and yellow caution stripes.
+		var steel:=_mat(Color(0.34,0.36,0.40),Color(0.03,0.035,0.05),0.16,0.70,0.24)
+		var dark:=_mat(Color(0.12,0.13,0.15),Color(0.01,0.01,0.02),0.10,0.82,0.22)
+		var caution:=_mat(Color(0.90,0.72,0.05),Color(0.7,0.5,0.0),1.6,0.20,0.16)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.34,-0.35,0),Vector3(0.34,4.4,SECTION_LENGTH*0.9),steel)
+			# Conveyor rollers along the lower wall.
+			for z:float in [-2.4,-1.2,0.0,1.2,2.4]:
+				_cylinder(section,Vector3(side*3.86,-2.0,z),0.16,0.7,dark,Vector3(0,0,90))
+			_box(section,Vector3(side*3.86,-1.55,0),Vector3(0.08,0.10,SECTION_LENGTH*0.9),caution)
+		for x:float in [-2.6,0.0,2.6]: _box(section,Vector3(x,2.05,0),Vector3(0.9,0.18,SECTION_LENGTH*0.8),steel)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.12,0.04,SECTION_LENGTH*0.9),caution)
+		if index%4==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.7,-0.7); light.light_color=Color(1.0,0.88,0.55); light.light_energy=3.2; light.omni_range=6.0; section.add_child(light)
+	else:
+		# Neon city sector: dark towers flanking the tunnel with pink/cyan window grids.
+		var tower:=_mat(Color(0.06,0.07,0.11),Color(0.01,0.01,0.03),0.10,0.72,0.20)
+		var pink:=_mat(Color(1.0,0.24,0.62),Color(1.0,0.05,0.5),3.8,0.10,0.08)
+		var cyan:=_mat(Color(0.20,0.9,1.0),Color(0.0,0.8,1.0),3.8,0.10,0.08)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.4,-0.35,0),Vector3(0.5,4.6,SECTION_LENGTH*0.9),tower)
+			# Window grid: rows of tiny glowing panes.
+			for y:float in [-2.0,-1.2,-0.4,0.4,1.2]:
+				for z:float in [-2.4,-0.8,0.8,2.4]:
+					_box(section,Vector3(side*4.12,y,z),Vector3(0.05,0.16,0.30),pink if (int(y*10)+int(z))%2==0 else cyan)
+		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,2.15,0),Vector3(0.10,0.10,SECTION_LENGTH*0.8),cyan)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.06,0.05,SECTION_LENGTH*0.9),pink)
+		if index%3==1:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.2,-1.0); light.light_color=Color(1.0,0.3,0.7); light.light_energy=3.0; light.omni_range=5.8; section.add_child(light)
 
 func _update_biome_environment(delta:float,biome:int)->void:
 	var target_ambient:=Color(0.38,0.40,0.50)
@@ -149,6 +322,30 @@ func _update_biome_environment(delta:float,biome:int)->void:
 		target_ambient=Color(0.24,0.28,0.48); target_fog=Color(0.12,0.08,0.34)
 	elif biome==3:
 		target_ambient=Color(0.52,0.56,0.68); target_fog=Color(0.22,0.30,0.42)
+	elif biome==4:
+		target_ambient=Color(0.40,0.52,0.66); target_fog=Color(0.16,0.34,0.52)
+	elif biome==5:
+		target_ambient=Color(0.34,0.46,0.18); target_fog=Color(0.20,0.40,0.04)
+	elif biome==6:
+		target_ambient=Color(0.20,0.24,0.40); target_fog=Color(0.04,0.06,0.16)
+	elif biome==7:
+		target_ambient=Color(0.50,0.40,0.20); target_fog=Color(0.34,0.22,0.05)
+	elif biome==8:
+		target_ambient=Color(0.40,0.24,0.52); target_fog=Color(0.34,0.06,0.44)
+	elif biome==9:
+		target_ambient=Color(0.14,0.36,0.40); target_fog=Color(0.02,0.16,0.20)
+	elif biome==10:
+		target_ambient=Color(0.52,0.44,0.28); target_fog=Color(0.34,0.24,0.10)
+	elif biome==11:
+		target_ambient=Color(0.22,0.44,0.24); target_fog=Color(0.04,0.20,0.08)
+	elif biome==12:
+		target_ambient=Color(0.48,0.24,0.12); target_fog=Color(0.38,0.10,0.02)
+	elif biome==13:
+		target_ambient=Color(0.34,0.28,0.48); target_fog=Color(0.14,0.08,0.28)
+	elif biome==14:
+		target_ambient=Color(0.46,0.44,0.34); target_fog=Color(0.20,0.18,0.10)
+	elif biome==15:
+		target_ambient=Color(0.34,0.22,0.42); target_fog=Color(0.24,0.06,0.34)
 	for child in get_children():
 		if child is WorldEnvironment and child.environment:
 			child.environment.ambient_light_color=child.environment.ambient_light_color.lerp(target_ambient,clampf(delta*0.7,0,1))
