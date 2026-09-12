@@ -113,7 +113,7 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 			for y:float in [-1.85,-0.65,0.55]: _cylinder(section,Vector3(side*4.05,y,0),0.11,SECTION_LENGTH*0.90,pipe,Vector3(90,0,0))
 			_box(section,Vector3(side*4.30,1.15,0),Vector3(0.09,0.12,SECTION_LENGTH*0.85),hot)
 		for z:float in [-2.4,2.4]: _box(section,Vector3(0,-3.02,z),Vector3(7.2,0.055,0.30),dark)
-		if index%2==0:
+		if index%3==0:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,-0.4,-1.2); light.light_color=Color(1.0,0.16,0.04); light.light_energy=3.2; light.omni_range=5.2; section.add_child(light)
 	elif biome==2:
 		# Energy sector: cooler, cleaner geometry with violet/cyan energy rails and open visual rhythm.
@@ -125,7 +125,7 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 			_box(section,Vector3(side*3.58,0.55,0),Vector3(0.065,0.08,SECTION_LENGTH*0.95),cyan)
 			_box(section,Vector3(side*3.42,-1.45,0),Vector3(0.055,0.06,SECTION_LENGTH*0.82),violet)
 		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,1.65,0),Vector3(0.10,0.08,SECTION_LENGTH*0.78),cyan)
-		if index%2==1:
+		if index%3==1:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.15,-0.8); light.light_color=Color(0.35,0.18,1.0); light.light_energy=3.0; light.omni_range=5.6; section.add_child(light)
 	else:
 		# Lab sector: bright white hard-surface panels, cool lighting and reduced visual noise.
@@ -137,7 +137,7 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 			_box(section,Vector3(side*4.20,0.92,0),Vector3(0.045,0.07,SECTION_LENGTH*0.88),lightmat)
 		for x:float in [-2.8,0.0,2.8]: _box(section,Vector3(x,2.00,0),Vector3(1.25,0.12,SECTION_LENGTH*0.88),white)
 		for x:float in [-1.40,1.40]: _box(section,Vector3(x,-3.03,0),Vector3(0.035,0.025,SECTION_LENGTH*0.92),seam)
-		if index%3==0:
+		if index%4==0:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.8,-0.5); light.light_color=Color(0.72,0.88,1.0); light.light_energy=3.6; light.omni_range=6.2; section.add_child(light)
 
 func _update_biome_environment(delta:float,biome:int)->void:

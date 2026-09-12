@@ -97,7 +97,7 @@ func _make_world() -> void:
 	add_child(key)
 
 	# Fixed light zones: geometry moving through them gives much richer shading.
-	for i in range(6):
+	for i in range(4):
 		var light := OmniLight3D.new()
 		light.position = Vector3(-2.7 if i % 2 == 0 else 2.7, -0.2 + float(i % 3) * 0.8, -8.0 - float(i) * 18.0)
 		light.light_color = Color(0.05, 0.75, 1.0) if i % 2 == 0 else Color(0.65, 0.18, 1.0)
