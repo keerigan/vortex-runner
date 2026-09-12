@@ -9,7 +9,7 @@ extends "res://scripts/fx.gd"
 #   * A new pickup: the violet x2 orb doubles score for a few seconds.
 # ---------------------------------------------------------------------------
 
-const BIOME_NAMES := ["INDUSTRIEL", "RÉACTEUR", "ÉNERGIE", "LABORATOIRE", "CRYO", "TOXIQUE"]
+const BIOME_NAMES := ["INDUSTRIEL", "RÉACTEUR", "ÉNERGIE", "LABORATOIRE", "CRYO", "TOXIQUE", "VIDE", "TEMPLE", "ORAGE"]
 const DOUBLE_CHANCE := 0.12
 const DOUBLE_MS := 6000
 
