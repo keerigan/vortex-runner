@@ -88,7 +88,7 @@ func _reset_obstacle(area:Area3D,z:float)->void:
 	area.rotation_degrees.z=randf_range(-7.0,7.0)
 
 func _current_biome()->int:
-	return int(floor(score / BIOME_LENGTH)) % 4
+	return int(floor(score / BIOME_LENGTH)) % 6
 
 func _build_corridor_section(section:Node3D,index:int)->void:
 	super._build_corridor_section(section,index)
@@ -127,7 +127,7 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,1.65,0),Vector3(0.10,0.08,SECTION_LENGTH*0.78),cyan)
 		if index%3==1:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.15,-0.8); light.light_color=Color(0.35,0.18,1.0); light.light_energy=3.0; light.omni_range=5.6; section.add_child(light)
-	else:
+	elif biome==3:
 		# Lab sector: bright white hard-surface panels, cool lighting and reduced visual noise.
 		var white:=_mat(Color(0.72,0.76,0.84),Color(0.05,0.07,0.11),0.28,0.36,0.16)
 		var lightmat:=_mat(Color(0.72,0.94,1.0),Color(0.35,0.80,1.0),2.2,0.10,0.04)
@@ -139,6 +139,34 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 		for x:float in [-1.40,1.40]: _box(section,Vector3(x,-3.03,0),Vector3(0.035,0.025,SECTION_LENGTH*0.92),seam)
 		if index%4==0:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.8,-0.5); light.light_color=Color(0.72,0.88,1.0); light.light_energy=3.6; light.omni_range=6.2; section.add_child(light)
+	elif biome==4:
+		# Cryo sector: frozen tunnel - pale blue ice, frosted panels and angled crystal shards.
+		var ice:=_mat(Color(0.62,0.82,0.95),Color(0.10,0.30,0.52),0.9,0.10,0.06)
+		var frost:=_mat(Color(0.80,0.90,0.98),Color(0.20,0.36,0.50),0.5,0.20,0.10)
+		var deep:=_mat(Color(0.10,0.20,0.34),Color(0.02,0.05,0.10),0.10,0.62,0.20)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.30,-0.35,0),Vector3(0.22,4.3,SECTION_LENGTH*0.90),deep,Vector3(0,0,side*6))
+			_box(section,Vector3(side*3.98,0.85,0),Vector3(0.06,0.10,SECTION_LENGTH*0.92),ice)
+			# Crystal shards jutting from the walls at a few points along the section.
+			for z:float in [-2.2,0.0,2.2]:
+				_box(section,Vector3(side*3.75,-1.9,z),Vector3(0.16,0.9,0.16),frost,Vector3(side*18,0,side*24))
+		for x:float in [-2.6,0.0,2.6]: _box(section,Vector3(x,2.02,0),Vector3(0.5,0.5,0.5),ice,Vector3(45,45,0))
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.05,0.03,SECTION_LENGTH*0.9),ice)
+		if index%3==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.4,-1.0); light.light_color=Color(0.45,0.78,1.0); light.light_energy=3.0; light.omni_range=5.8; section.add_child(light)
+	else:
+		# Toxic sector: acid-green haze, hazard bands and dripping green pipes.
+		var toxic:=_mat(Color(0.45,0.85,0.10),Color(0.30,0.90,0.0),3.6,0.14,0.08)
+		var pipe:=_mat(Color(0.20,0.26,0.14),Color(0.02,0.04,0.005),0.10,0.80,0.22)
+		var warn:=_mat(Color(0.85,0.80,0.10),Color(0.9,0.75,0.0),2.6,0.16,0.10)
+		for side:float in [-1.0,1.0]:
+			for y:float in [-1.75,-0.55,0.65]: _cylinder(section,Vector3(side*4.02,y,0),0.10,SECTION_LENGTH*0.90,pipe,Vector3(90,0,0))
+			_box(section,Vector3(side*4.26,1.05,0),Vector3(0.08,0.12,SECTION_LENGTH*0.85),toxic)
+			_box(section,Vector3(side*3.72,-1.15,0),Vector3(0.05,0.06,SECTION_LENGTH*0.82),toxic)
+		for z:float in [-2.4,0.0,2.4]: _box(section,Vector3(0,2.02,z),Vector3(6.6,0.12,0.5),warn,Vector3(0,0,0))
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.06,0.04,SECTION_LENGTH*0.9),toxic)
+		if index%3==1:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,-0.3,-1.0); light.light_color=Color(0.45,0.95,0.10); light.light_energy=3.0; light.omni_range=5.6; section.add_child(light)
 
 func _update_biome_environment(delta:float,biome:int)->void:
 	var target_ambient:=Color(0.38,0.40,0.50)
@@ -149,6 +177,10 @@ func _update_biome_environment(delta:float,biome:int)->void:
 		target_ambient=Color(0.24,0.28,0.48); target_fog=Color(0.12,0.08,0.34)
 	elif biome==3:
 		target_ambient=Color(0.52,0.56,0.68); target_fog=Color(0.22,0.30,0.42)
+	elif biome==4:
+		target_ambient=Color(0.40,0.52,0.66); target_fog=Color(0.16,0.34,0.52)
+	elif biome==5:
+		target_ambient=Color(0.34,0.46,0.18); target_fog=Color(0.20,0.40,0.04)
 	for child in get_children():
 		if child is WorldEnvironment and child.environment:
 			child.environment.ambient_light_color=child.environment.ambient_light_color.lerp(target_ambient,clampf(delta*0.7,0,1))
