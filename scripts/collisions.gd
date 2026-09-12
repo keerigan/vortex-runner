@@ -18,10 +18,11 @@ extends "res://scripts/juice.gd"
 # is the single, predictable source of collisions.
 # ---------------------------------------------------------------------------
 
-# Ship half-size added to each hazard silhouette. Sized to the visible hull so
-# a hazard that overlaps the ship on screen actually kills.
-const SHIP_PAD_X := 0.42
-const SHIP_PAD_Y := 0.26
+# Ship half-size added to each hazard silhouette. Kept to the fuselage/body, not
+# the wide wings, so only a real body hit counts - the wings can graze a hazard
+# without dying (fairer, and it pairs with the health bar).
+const SHIP_PAD_X := 0.34
+const SHIP_PAD_Y := 0.24
 # Depth half-window: the ship and hazard both have thickness, so a hazard counts
 # while its body overlaps the ship's depth, not only at the exact centre plane.
 const Z_OVERLAP := 0.80
