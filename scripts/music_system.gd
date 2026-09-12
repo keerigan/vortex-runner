@@ -138,17 +138,17 @@ func _build_music_controls() -> void:
 	music_button = Button.new()
 	music_button.text = "♫"
 	music_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	music_button.position = Vector2(-92, 22)
-	music_button.size = Vector2(72, 72)
-	music_button.add_theme_font_size_override("font_size", 34)
+	music_button.position = Vector2(-116, 22)
+	music_button.size = Vector2(96, 96)
+	music_button.add_theme_font_size_override("font_size", 46)
 	music_button.pressed.connect(_toggle_music_panel)
 	layer.add_child(music_button)
 
 	# Nearly full-width panel on the 540px gameplay viewport.
 	music_panel = PanelContainer.new()
 	music_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	music_panel.position = Vector2(-510, 108)
-	music_panel.size = Vector2(490, 410)
+	music_panel.position = Vector2(-720, 130)
+	music_panel.size = Vector2(700, 560)
 	music_panel.visible = false
 	layer.add_child(music_panel)
 
@@ -167,21 +167,21 @@ func _build_music_controls() -> void:
 	box.add_child(title_row)
 	var title := Label.new()
 	title.text = "AUDIO"
-	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_font_size_override("font_size", 44)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(title)
 	var close_button := Button.new()
 	close_button.text = "×"
-	close_button.custom_minimum_size = Vector2(62, 54)
-	close_button.add_theme_font_size_override("font_size", 30)
+	close_button.custom_minimum_size = Vector2(84, 76)
+	close_button.add_theme_font_size_override("font_size", 44)
 	close_button.pressed.connect(_toggle_music_panel)
 	title_row.add_child(close_button)
 
 	music_toggle = CheckButton.new()
 	music_toggle.text = "Musique"
 	music_toggle.button_pressed = music_enabled
-	music_toggle.custom_minimum_size = Vector2(0, 60)
-	music_toggle.add_theme_font_size_override("font_size", 23)
+	music_toggle.custom_minimum_size = Vector2(0, 86)
+	music_toggle.add_theme_font_size_override("font_size", 34)
 	music_toggle.toggled.connect(_on_music_toggled)
 	box.add_child(music_toggle)
 
@@ -189,13 +189,13 @@ func _build_music_controls() -> void:
 	box.add_child(volume_title)
 	var volume_label := Label.new()
 	volume_label.text = "VOLUME"
-	volume_label.add_theme_font_size_override("font_size", 19)
+	volume_label.add_theme_font_size_override("font_size", 30)
 	volume_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	volume_title.add_child(volume_label)
 	music_volume_label = Label.new()
-	music_volume_label.add_theme_font_size_override("font_size", 19)
+	music_volume_label.add_theme_font_size_override("font_size", 30)
 	music_volume_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	music_volume_label.custom_minimum_size.x = 72
+	music_volume_label.custom_minimum_size.x = 100
 	volume_title.add_child(music_volume_label)
 
 	music_slider = HSlider.new()
@@ -203,21 +203,21 @@ func _build_music_controls() -> void:
 	music_slider.max_value = 100
 	music_slider.step = 1
 	music_slider.value = music_volume * 100.0
-	music_slider.custom_minimum_size = Vector2(430, 56)
+	music_slider.custom_minimum_size = Vector2(600, 74)
 	music_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	music_slider.value_changed.connect(_on_music_volume_changed)
 	box.add_child(music_slider)
 
 	music_track_label = Label.new()
 	music_track_label.clip_text = true
-	music_track_label.custom_minimum_size = Vector2(430, 38)
-	music_track_label.add_theme_font_size_override("font_size", 18)
+	music_track_label.custom_minimum_size = Vector2(600, 52)
+	music_track_label.add_theme_font_size_override("font_size", 28)
 	box.add_child(music_track_label)
 
 	var next_button := Button.new()
 	next_button.text = "MORCEAU SUIVANT   ›"
-	next_button.custom_minimum_size = Vector2(0, 62)
-	next_button.add_theme_font_size_override("font_size", 20)
+	next_button.custom_minimum_size = Vector2(0, 86)
+	next_button.add_theme_font_size_override("font_size", 32)
 	next_button.pressed.connect(_on_next_track)
 	box.add_child(next_button)
 	_update_track_label()
