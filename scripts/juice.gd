@@ -61,15 +61,22 @@ func _check_near_miss() -> void:
 	var sp := ship.global_position
 	for child in obstacle_root.get_children():
 		var area := child as Area3D
+		# Swept detection (like the collision layer): catch the exact frame the
+		# hazard crosses the ship's depth, so near misses still register during
+		# Overdrive when hazards jump >1 unit between frames.
+		var znow := area.position.z
+		var zprev := float(area.get_meta("nm_pz", znow))
+		area.set_meta("nm_pz", znow)
 		if bool(area.get_meta("nm_done", false)):
-			if area.position.z < sp.z - 3.0:
+			if znow < sp.z - 3.0:
 				area.set_meta("nm_done", false)
 			continue
-		if absf(area.position.z - sp.z) < 0.6:
+		var crossed := zprev < sp.z and znow >= sp.z
+		if crossed or absf(znow - sp.z) < 0.6:
 			var dx := area.position.x - sp.x
 			var dy := area.position.y - sp.y
 			var d := sqrt(dx * dx + dy * dy)
-			if d > 0.78 and d < 1.5:
+			if d > 0.78 and d < 1.6:
 				area.set_meta("nm_done", true)
 				_near_miss(area.position)
 

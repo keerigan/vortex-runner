@@ -10,7 +10,7 @@ func _make_world() -> void:
 	hero.light_energy = 5.5
 	hero.spot_range = 15.0
 	hero.spot_angle = 42.0
-	hero.shadow_enabled = true
+	hero.shadow_enabled = false   # perf: no realtime shadow map on mobile
 	add_child(hero)
 	var warm := OmniLight3D.new()
 	warm.position = Vector3(0.0, -2.0, -8.0)
