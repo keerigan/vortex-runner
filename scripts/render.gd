@@ -100,3 +100,29 @@ func _make_girder(area: Area3D) -> void:
 	var fp := _visual_footprint(area)
 	area.set_meta("fpx", fp.x)
 	area.set_meta("fpy", fp.y)
+
+# --- 3. Menu overlays are mutually exclusive ---
+# Shop / Missions / Music panels each just set themselves visible, so they used
+# to stack on top of each other. Opening one now closes the others first.
+
+func _close_menu_overlays(keep: String) -> void:
+	if keep != "shop" and _shop_panel:
+		_shop_panel.visible = false
+	if keep != "missions" and _mission_panel:
+		_mission_panel.visible = false
+	if keep != "music" and music_panel:
+		music_panel.visible = false
+
+func _open_shop() -> void:
+	_close_menu_overlays("shop")
+	super._open_shop()
+
+func _open_missions() -> void:
+	_close_menu_overlays("missions")
+	super._open_missions()
+
+func _toggle_music_panel() -> void:
+	# Only clear the others when this action is about to OPEN the music panel.
+	if music_panel and not music_panel.visible:
+		_close_menu_overlays("music")
+	super._toggle_music_panel()
