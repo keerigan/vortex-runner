@@ -27,6 +27,15 @@ func _physics_process(delta: float) -> void:
 func _reset_obstacle(area: Area3D, z: float) -> void:
 	super._reset_obstacle(area, z)
 	var p := _next_placement()
+	# Anti-camp: patterns cap around x=+/-2.6, but the ship can reach the far
+	# corners (+/-3.55, top/bottom) where nothing spawns. So ~1 obstacle in 4
+	# is aimed at wherever the ship currently sits (with a small jitter that
+	# still leaves a dodge window). The centreline curve is zero at the ship's
+	# depth, so base = ship position lands the hazard right on that spot -
+	# parking in a corner, or anywhere, gets punished. Keep moving.
+	if started and alive and randf() < 0.24:
+		p.x = clampf(ship.position.x + randf_range(-0.45, 0.45), -3.5, 3.5)
+		p.y = clampf(ship.position.y + randf_range(-0.4, 0.4), -2.15, 1.3)
 	area.position = p
 	area.set_meta("base_x", p.x)
 	area.set_meta("base_y", p.y)
