@@ -40,20 +40,24 @@ func _quad(size: float, col: Color, energy: float) -> QuadMesh:
 func _build_trails() -> void:
 	if ship_visual == null:
 		return
-	for x: float in [-0.36, 0.36]:
+	# Small, short embers right at the nozzles. The camera sits toward +z and the
+	# thrusters point that way, so a big fast spray blooms straight over the ship
+	# and hides it. Keep them tiny, few, slow and short-lived: a hint of afterburn
+	# at the tail, never a cloud in front of the fuselage.
+	for x: float in [-0.34, 0.34]:
 		var p := CPUParticles3D.new()
-		p.amount = 22
-		p.lifetime = 0.45
-		p.position = Vector3(x, -0.06, 1.5)
-		p.direction = Vector3(0.0, 0.0, 1.0)   # stream out behind the ship
-		p.spread = 8.0
-		p.initial_velocity_min = 7.0
-		p.initial_velocity_max = 10.0
+		p.amount = 8
+		p.lifetime = 0.18
+		p.position = Vector3(x, -0.06, 1.58)
+		p.direction = Vector3(0.0, 0.0, 1.0)   # trail just behind the nozzle
+		p.spread = 5.0
+		p.initial_velocity_min = 1.4
+		p.initial_velocity_max = 2.4
 		p.gravity = Vector3.ZERO
-		p.scale_amount_min = 0.10
-		p.scale_amount_max = 0.20
-		p.color = Color(0.4, 0.92, 1.0)
-		p.mesh = _quad(0.5, Color(0.4, 0.92, 1.0), 4.0)
+		p.scale_amount_min = 0.03
+		p.scale_amount_max = 0.06
+		p.color = Color(0.4, 0.92, 1.0, 0.7)
+		p.mesh = _quad(0.11, Color(0.4, 0.92, 1.0), 1.6)
 		ship_visual.add_child(p)
 		_trails.append(p)
 
@@ -89,5 +93,5 @@ func _process(delta: float) -> void:
 	var od := _overdrive_active()
 	for p in _trails:
 		var cp := p as CPUParticles3D
-		cp.initial_velocity_max = 16.0 if od else 10.0
-		cp.scale_amount_max = 0.32 if od else 0.20
+		cp.initial_velocity_max = 3.6 if od else 2.4
+		cp.scale_amount_max = 0.10 if od else 0.06
