@@ -45,9 +45,23 @@ var _flash_pool: Array = []
 var _flash_tweens: Array = []
 var _flash_next := 0
 
+# Continue-for-coins on death.
+const CONTINUE_BASE_COST := 60      # first continue; doubles each time in a run
+const CONTINUE_MAX := 5
+const CONTINUE_SECONDS := 30.0
+var _continue_used := 0
+var _continue_active := false
+var _continue_deadline := 0
+var _continue_cost := 0
+var _continue_panel: Control
+var _continue_timer_label: Label
+var _continue_bar: ProgressBar
+var _continue_btn: Button
+
 func _ready() -> void:
 	super._ready()
 	_build_flash_pool()
+	_build_continue_panel()
 
 # --- 1. MultiMesh batching ---
 
@@ -220,7 +234,143 @@ func _flash(pos: Vector3, color: Color) -> void:
 	tw.chain().tween_callback(func() -> void: m.visible = false)
 	_flash_tweens[idx] = tw
 
-# --- 5. Menu overlays are mutually exclusive ---
+# --- 5. Continue for coins ---
+# On death, if the player can afford it, offer a revive for coins with a 30 s
+# countdown; if it runs out (or they pick MENU) the offer ends. The payout is
+# banked in shop._hit at every death, so a revive UNDOES this death's payout
+# (_last_payout) to avoid double-counting - the final death banks the full run.
+
+func _build_continue_panel() -> void:
+	var layer := _hud_layer()
+	if layer == null:
+		return
+	var panel := _centered_panel(layer)
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.visible = false
+	_continue_panel = panel
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 20)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(box)
+	box.add_child(_label("CONTINUER ?", 52, Color(1.0, 0.85, 0.3)))
+	_continue_timer_label = _label("30 s", 40, Color(0.9, 0.95, 1.0))
+	box.add_child(_continue_timer_label)
+	_continue_bar = ProgressBar.new()
+	_continue_bar.min_value = 0.0
+	_continue_bar.max_value = 100.0
+	_continue_bar.value = 100.0
+	_continue_bar.show_percentage = false
+	_continue_bar.custom_minimum_size = Vector2(460, 22)
+	box.add_child(_continue_bar)
+	_continue_btn = Button.new()
+	_continue_btn.custom_minimum_size = Vector2(480, 110)
+	_continue_btn.add_theme_font_size_override("font_size", 40)
+	_continue_btn.pressed.connect(_do_continue)
+	box.add_child(_continue_btn)
+	var retry := Button.new()
+	retry.text = "REJOUER"
+	retry.custom_minimum_size = Vector2(340, 90)
+	retry.add_theme_font_size_override("font_size", 34)
+	retry.pressed.connect(_play_again)
+	box.add_child(retry)
+	var menu := Button.new()
+	menu.text = "MENU"
+	menu.custom_minimum_size = Vector2(300, 82)
+	menu.add_theme_font_size_override("font_size", 30)
+	menu.pressed.connect(_to_menu)
+	box.add_child(menu)
+
+func _next_continue_cost() -> int:
+	return CONTINUE_BASE_COST * int(pow(2, _continue_used))
+
+func _show_game_over() -> void:
+	var cost := _next_continue_cost()
+	# Spendable = banked coins minus the payout shop._hit just added for THIS death
+	# (that payout is only real if the run truly ends here).
+	if _continue_used < CONTINUE_MAX and _continue_panel != null and (coins - _last_payout) >= cost:
+		_offer_continue(cost)
+	else:
+		super._show_game_over()
+
+func _offer_continue(cost: int) -> void:
+	_continue_active = true
+	_continue_cost = cost
+	_continue_deadline = Time.get_ticks_msec() + int(CONTINUE_SECONDS * 1000.0)
+	if game_over_label:
+		game_over_label.visible = false
+	if _pause_button:
+		_pause_button.visible = false
+	if _continue_btn:
+		_continue_btn.text = "CONTINUER  -%d ⛁" % cost
+	if _continue_bar:
+		_continue_bar.value = 100.0
+	if _continue_timer_label:
+		_continue_timer_label.text = "%d s" % int(CONTINUE_SECONDS)
+	_continue_panel.visible = true
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	if not _continue_active:
+		return
+	var left := float(_continue_deadline - Time.get_ticks_msec()) / 1000.0
+	if left <= 0.0:
+		_end_continue_offer()
+		_to_menu()
+		return
+	if _continue_timer_label:
+		_continue_timer_label.text = "%d s" % int(ceil(left))
+	if _continue_bar:
+		_continue_bar.value = clampf(left / CONTINUE_SECONDS * 100.0, 0.0, 100.0)
+
+func _end_continue_offer() -> void:
+	_continue_active = false
+	if _continue_panel:
+		_continue_panel.visible = false
+
+func _do_continue() -> void:
+	if not _continue_active or coins - _last_payout < _continue_cost:
+		return
+	# Pay the cost, and undo this death's payout since the run isn't over.
+	coins -= _continue_cost
+	coins -= _last_payout
+	if coins < 0:
+		coins = 0
+	_save_shop()
+	_update_coin_labels()
+	_continue_used += 1
+	_end_continue_offer()
+	_revive()
+
+func _revive() -> void:
+	alive = true
+	speed = 13.0
+	Engine.time_scale = 1.0
+	hp = max_hp
+	shield_charges = maxi(shield_charges, 1)
+	_invuln_ms = Time.get_ticks_msec() + 2500
+	if game_over_label:
+		game_over_label.visible = false
+	if ship_visual:
+		ship_visual.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
+		ship_visual.visible = true
+	if _pause_button:
+		_pause_button.visible = true
+	# Clear anything close so the player doesn't die again instantly.
+	if obstacle_root:
+		for child in obstacle_root.get_children():
+			var area := child as Area3D
+			if area.position.z > -30.0:
+				_reset_obstacle(area, randf_range(-190.0, -140.0))
+	_update_health_ui()
+
+func _unhandled_input(event: InputEvent) -> void:
+	# While the continue offer is up, swallow taps so the tap-to-restart handler
+	# lower in the chain doesn't reload the scene behind the panel.
+	if _continue_active:
+		return
+	super._unhandled_input(event)
+
+# --- 6. Menu overlays are mutually exclusive ---
 # Shop / Missions / Music panels each just set themselves visible, so they used
 # to stack on top of each other. Opening one now closes the others first.
 
