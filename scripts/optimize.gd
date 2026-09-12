@@ -19,7 +19,50 @@ extends "res://scripts/menu.gd"
 # ---------------------------------------------------------------------------
 
 var _mat_cache: Dictionary = {}
+var _mesh_cache: Dictionary = {}
 var _cache_enabled := true
+
+# Box/cylinder meshes are immutable geometry, so identical ones are shared across
+# every MeshInstance instead of re-allocated on each corridor rebuild / hazard
+# recycle - same idea as the material cache, cutting memory and per-recycle churn.
+func _box(parent: Node3D, pos: Vector3, size: Vector3, material: Material, rot := Vector3.ZERO) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	node.mesh = _cached_box(size)
+	node.position = pos
+	node.rotation_degrees = rot
+	node.material_override = material
+	parent.add_child(node)
+	return node
+
+func _cylinder(parent: Node3D, pos: Vector3, radius: float, height: float, material: Material, rot := Vector3(90, 0, 0)) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	node.mesh = _cached_cylinder(radius, height)
+	node.position = pos
+	node.rotation_degrees = rot
+	node.material_override = material
+	parent.add_child(node)
+	return node
+
+func _cached_box(size: Vector3) -> BoxMesh:
+	var key := "b|%.3f|%.3f|%.3f" % [size.x, size.y, size.z]
+	var m: BoxMesh = _mesh_cache.get(key)
+	if m == null:
+		m = BoxMesh.new()
+		m.size = size
+		_mesh_cache[key] = m
+	return m
+
+func _cached_cylinder(radius: float, height: float) -> CylinderMesh:
+	var key := "c|%.3f|%.3f" % [radius, height]
+	var m: CylinderMesh = _mesh_cache.get(key)
+	if m == null:
+		m = CylinderMesh.new()
+		m.top_radius = radius
+		m.bottom_radius = radius
+		m.height = height
+		m.radial_segments = 20
+		_mesh_cache[key] = m
+	return m
 
 func _mat(color: Color, emission := Color.BLACK, energy := 0.0, metallic := 0.0, roughness := 0.28) -> StandardMaterial3D:
 	if not _cache_enabled:
