@@ -10,8 +10,10 @@ extends "res://scripts/collisions.gd"
 # shake; the run ends only when the last HP is spent.
 # ---------------------------------------------------------------------------
 
-const MAX_HP := 3
+const MAX_HP := 3      # default; upper layers (shop) may raise max_hp up to HP_CAP
+const HP_CAP := 5
 
+var max_hp := MAX_HP
 var hp := MAX_HP
 var _hp_pips: Array = []
 var _dmg_overlay: ColorRect
@@ -21,7 +23,7 @@ func _ready() -> void:
 	super._ready()
 	_dmg_sound = _make_tone(300.0, 120.0, 0.18, 0.5)
 	_build_health_ui()
-	hp = MAX_HP
+	hp = max_hp
 	_update_health_ui()
 
 func _build_health_ui() -> void:
@@ -33,7 +35,7 @@ func _build_health_ui() -> void:
 	_dmg_overlay.color = Color(1.0, 0.1, 0.1, 0.0)
 	_dmg_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_dmg_overlay)
-	for i in range(MAX_HP):
+	for i in range(HP_CAP):
 		var pip := ColorRect.new()
 		pip.position = Vector2(24 + i * 34, 128)
 		pip.size = Vector2(28, 12)
@@ -48,13 +50,13 @@ func _update_health_ui() -> void:
 
 func _set_playing_hud(is_playing: bool) -> void:
 	super._set_playing_hud(is_playing)
-	for pip in _hp_pips:
-		(pip as ColorRect).visible = is_playing
+	for i in range(_hp_pips.size()):
+		(_hp_pips[i] as ColorRect).visible = is_playing and i < max_hp
 	if _dmg_overlay:
 		_dmg_overlay.color = Color(1.0, 0.1, 0.1, 0.0)
 
 func _begin_game() -> void:
-	hp = MAX_HP
+	hp = max_hp
 	_update_health_ui()
 	super._begin_game()
 
