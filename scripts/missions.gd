@@ -144,8 +144,8 @@ func _build_missions_ui() -> void:
 		if mv:
 			var btn := Button.new()
 			btn.text = "🎯  MISSIONS"
-			btn.custom_minimum_size = Vector2(300, 60)
-			btn.add_theme_font_size_override("font_size", 24)
+			btn.custom_minimum_size = Vector2(460, 96)
+			btn.add_theme_font_size_override("font_size", 38)
 			btn.pressed.connect(_open_missions)
 			mv.add_child(btn)
 
@@ -165,13 +165,13 @@ func _build_missions_ui() -> void:
 	box.add_child(_label("Chaque mission accomplie rapporte %d ●" % MISSION_REWARD, 14, Color(0.68, 0.74, 0.86)))
 	var close := Button.new()
 	close.text = "FERMER"
-	close.custom_minimum_size = Vector2(200, 54)
-	close.add_theme_font_size_override("font_size", 20)
+	close.custom_minimum_size = Vector2(300, 84)
+	close.add_theme_font_size_override("font_size", 30)
 	close.pressed.connect(_close_missions)
 	box.add_child(close)
 
 	_mission_toast = Label.new()
-	_mission_toast.add_theme_font_size_override("font_size", 22)
+	_mission_toast.add_theme_font_size_override("font_size", 34)
 	_mission_toast.modulate = Color(1.0, 0.9, 0.4)
 	_mission_toast.position = Vector2(90, 205)
 	_mission_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE

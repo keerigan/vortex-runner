@@ -285,7 +285,7 @@ func _make_ui() -> void:
 	add_child(layer)
 	ui_label = Label.new()
 	ui_label.position = Vector2(24, 28)
-	ui_label.add_theme_font_size_override("font_size", 28)
+	ui_label.add_theme_font_size_override("font_size", 34)
 	layer.add_child(ui_label)
 	var title := Label.new()
 	title.position = Vector2(24, 65)

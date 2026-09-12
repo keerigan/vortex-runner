@@ -123,7 +123,7 @@ func _panel_style() -> StyleBoxFlat:
 	sb.border_color = Color(0.15, 0.8, 1.0, 0.55)
 	sb.set_border_width_all(2)
 	sb.set_corner_radius_all(16)
-	sb.set_content_margin_all(30)
+	sb.set_content_margin_all(40)
 	return sb
 
 func _centered_panel(layer: CanvasLayer) -> PanelContainer:
@@ -140,7 +140,7 @@ func _centered_panel(layer: CanvasLayer) -> PanelContainer:
 func _label(text: String, size: int, color: Color) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", int(size * 1.5))   # UI scaled up for the 1080-wide canvas
 	l.modulate = color
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -164,8 +164,8 @@ func _build_menu_ui() -> void:
 	box.add_child(_menu_best)
 	var play := Button.new()
 	play.text = "▶   JOUER"
-	play.custom_minimum_size = Vector2(320, 78)
-	play.add_theme_font_size_override("font_size", 30)
+	play.custom_minimum_size = Vector2(460, 116)
+	play.add_theme_font_size_override("font_size", 46)
 	play.pressed.connect(_begin_game)
 	box.add_child(play)
 	box.add_child(_label("Glisse pour piloter\nAttrape les orbes dorées  •  ◈ bouclier", 15, Color(0.68, 0.74, 0.86, 0.85)))
@@ -189,7 +189,7 @@ func _build_menu_ui() -> void:
 	obox.add_child(_label("TOUCHE POUR REJOUER", 20, Color(0.55, 0.9, 1.0, 0.9)))
 	var menu_button := Button.new()
 	menu_button.text = "MENU"
-	menu_button.custom_minimum_size = Vector2(200, 58)
-	menu_button.add_theme_font_size_override("font_size", 20)
+	menu_button.custom_minimum_size = Vector2(300, 86)
+	menu_button.add_theme_font_size_override("font_size", 32)
 	menu_button.pressed.connect(_to_menu)
 	obox.add_child(menu_button)

@@ -37,8 +37,8 @@ func _build_health_ui() -> void:
 	layer.add_child(_dmg_overlay)
 	for i in range(HP_CAP):
 		var pip := ColorRect.new()
-		pip.position = Vector2(24 + i * 34, 128)
-		pip.size = Vector2(28, 12)
+		pip.position = Vector2(24 + i * 40, 128)
+		pip.size = Vector2(34, 15)
 		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		layer.add_child(pip)
 		_hp_pips.append(pip)

@@ -274,14 +274,14 @@ func _make_ui() -> void:
 
 	_best_label = Label.new()
 	_best_label.position = Vector2(24, 66)
-	_best_label.add_theme_font_size_override("font_size", 18)
+	_best_label.add_theme_font_size_override("font_size", 24)
 	_best_label.modulate = Color(1.0, 0.85, 0.4, 0.92)
 	_best_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_best_label)
 
 	_chain_label = Label.new()
 	_chain_label.position = Vector2(24, 96)
-	_chain_label.add_theme_font_size_override("font_size", 30)
+	_chain_label.add_theme_font_size_override("font_size", 38)
 	_chain_label.modulate = Color(1.0, 0.8, 0.3)
 	_chain_label.pivot_offset = Vector2(20, 20)
 	_chain_label.visible = false
@@ -291,7 +291,7 @@ func _make_ui() -> void:
 	_shield_label = Label.new()
 	_shield_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_shield_label.position = Vector2(-260, 34)
-	_shield_label.add_theme_font_size_override("font_size", 22)
+	_shield_label.add_theme_font_size_override("font_size", 30)
 	_shield_label.modulate = Color(0.4, 1.0, 0.65)
 	_shield_label.text = "◈ BOUCLIER"
 	_shield_label.visible = false

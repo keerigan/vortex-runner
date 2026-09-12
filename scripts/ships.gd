@@ -159,33 +159,33 @@ func _build_ship_selector() -> void:
 	row.add_theme_constant_override("separation", 16)
 	var prev_btn := Button.new()
 	prev_btn.text = "◀"
-	prev_btn.custom_minimum_size = Vector2(64, 56)
-	prev_btn.add_theme_font_size_override("font_size", 26)
+	prev_btn.custom_minimum_size = Vector2(96, 86)
+	prev_btn.add_theme_font_size_override("font_size", 40)
 	prev_btn.pressed.connect(_prev_ship)
 	row.add_child(prev_btn)
 	_ship_name_label = Label.new()
-	_ship_name_label.add_theme_font_size_override("font_size", 24)
+	_ship_name_label.add_theme_font_size_override("font_size", 38)
 	_ship_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_ship_name_label.custom_minimum_size = Vector2(230, 0)
+	_ship_name_label.custom_minimum_size = Vector2(320, 0)
 	_ship_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(_ship_name_label)
 	var next_btn := Button.new()
 	next_btn.text = "▶"
-	next_btn.custom_minimum_size = Vector2(64, 56)
-	next_btn.add_theme_font_size_override("font_size", 26)
+	next_btn.custom_minimum_size = Vector2(96, 86)
+	next_btn.add_theme_font_size_override("font_size", 40)
 	next_btn.pressed.connect(_next_ship)
 	row.add_child(next_btn)
 	sel.add_child(row)
 
 	_ship_perk_label = Label.new()
-	_ship_perk_label.add_theme_font_size_override("font_size", 15)
+	_ship_perk_label.add_theme_font_size_override("font_size", 24)
 	_ship_perk_label.modulate = Color(0.72, 0.8, 0.92)
 	_ship_perk_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ship_perk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sel.add_child(_ship_perk_label)
 
 	_ship_lock_label = Label.new()
-	_ship_lock_label.add_theme_font_size_override("font_size", 14)
+	_ship_lock_label.add_theme_font_size_override("font_size", 22)
 	_ship_lock_label.modulate = Color(1.0, 0.72, 0.32)
 	_ship_lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ship_lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
