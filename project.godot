@@ -1,6 +1,7 @@
 [application]
 config/name="Vortex Runner"
 run/main_scene="res://main.tscn"
+config/icon="res://icon.png"
 
 [display]
 window/size/viewport_width=1080
