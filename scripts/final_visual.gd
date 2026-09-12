@@ -88,7 +88,7 @@ func _reset_obstacle(area:Area3D,z:float)->void:
 	area.rotation_degrees.z=randf_range(-7.0,7.0)
 
 func _current_biome()->int:
-	return int(floor(score / BIOME_LENGTH)) % 9
+	return int(floor(score / BIOME_LENGTH)) % 12
 
 func _build_corridor_section(section:Node3D,index:int)->void:
 	super._build_corridor_section(section,index)
@@ -197,7 +197,7 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.06,0.04,SECTION_LENGTH*0.9),glow)
 		if index%4==0:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.6,-0.8); light.light_color=Color(1.0,0.78,0.35); light.light_energy=3.6; light.omni_range=6.0; section.add_child(light)
-	else:
+	elif biome==8:
 		# Storm sector: electric violet/magenta neon arcs and charged rails.
 		var dark:=_mat(Color(0.12,0.08,0.20),Color(0.02,0.01,0.05),0.10,0.70,0.20)
 		var violet:=_mat(Color(0.60,0.20,1.0),Color(0.55,0.10,1.0),4.4,0.12,0.06)
@@ -212,6 +212,49 @@ func _decorate_biome(section:Node3D,biome:int,index:int)->void:
 		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.06,0.05,SECTION_LENGTH*0.9),magenta)
 		if index%3==1:
 			var light:=OmniLight3D.new(); light.position=Vector3(0,0.1,-1.0); light.light_color=Color(0.7,0.2,1.0); light.light_energy=3.2; light.omni_range=5.8; section.add_child(light)
+	elif biome==9:
+		# Abyss sector: deep-sea - dark teal, glowing bio-luminescent pods and kelp-like columns.
+		var deep:=_mat(Color(0.05,0.16,0.20),Color(0.01,0.05,0.07),0.10,0.66,0.26)
+		var bio:=_mat(Color(0.20,0.95,0.85),Color(0.0,0.85,0.75),3.4,0.10,0.08)
+		var kelp:=_mat(Color(0.08,0.34,0.28),Color(0.02,0.12,0.10),0.20,0.72,0.24)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.34,-0.35,0),Vector3(0.30,4.4,SECTION_LENGTH*0.9),deep)
+			for z:float in [-2.2,0.0,2.2]:
+				_cylinder(section,Vector3(side*3.9,-0.6,z),0.10,3.4,kelp,Vector3(0,0,side*8))
+				_box(section,Vector3(side*3.72,randf_range(-1.6,0.8),z),Vector3(0.18,0.18,0.18),bio)
+		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,2.02,0),Vector3(0.06,0.06,SECTION_LENGTH*0.86),bio)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.05,0.04,SECTION_LENGTH*0.9),bio)
+		if index%3==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,-0.2,-1.0); light.light_color=Color(0.10,0.80,0.85); light.light_energy=2.8; light.omni_range=6.0; section.add_child(light)
+	elif biome==10:
+		# Ruins sector: weathered sandstone blocks, broken pillars and warm dust.
+		var sand:=_mat(Color(0.68,0.56,0.36),Color(0.14,0.10,0.04),0.30,0.34,0.40)
+		var stone:=_mat(Color(0.50,0.42,0.30),Color(0.08,0.06,0.03),0.20,0.55,0.44)
+		var moss:=_mat(Color(0.36,0.46,0.20),Color(0.05,0.09,0.02),0.15,0.60,0.40)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.30,-0.35,0),Vector3(0.36,4.3,SECTION_LENGTH*0.92),sand)
+			for z:float in [-2.3,0.0,2.3]:
+				_box(section,Vector3(side*3.96,-0.4 + (float((index+int(z))%3)*0.4),z),Vector3(0.5,2.6,0.6),stone,Vector3(0,0,side*4))
+			_box(section,Vector3(side*3.7,-2.6,0),Vector3(0.10,0.10,SECTION_LENGTH*0.8),moss)
+		for x:float in [-2.6,0.0,2.6]: _box(section,Vector3(x,2.04,0),Vector3(1.0,0.22,SECTION_LENGTH*0.7),sand,Vector3(0,0,0))
+		if index%4==0:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.5,-0.8); light.light_color=Color(1.0,0.80,0.50); light.light_energy=3.2; light.omni_range=6.0; section.add_child(light)
+	else:
+		# Circuit sector: green PCB - traces, solder pads and chip blocks.
+		var board:=_mat(Color(0.04,0.24,0.12),Color(0.01,0.06,0.03),0.14,0.55,0.30)
+		var trace:=_mat(Color(0.75,0.85,0.30),Color(0.35,0.55,0.05),1.4,0.60,0.20)
+		var chip:=_mat(Color(0.10,0.11,0.13),Color(0.01,0.01,0.02),0.10,0.70,0.24)
+		var led:=_mat(Color(0.30,1.0,0.40),Color(0.10,1.0,0.20),3.6,0.10,0.08)
+		for side:float in [-1.0,1.0]:
+			_box(section,Vector3(side*4.34,-0.35,0),Vector3(0.30,4.4,SECTION_LENGTH*0.9),board)
+			for y:float in [-1.6,-0.4,0.8]: _box(section,Vector3(side*3.94,y,0),Vector3(0.05,0.05,SECTION_LENGTH*0.9),trace)
+			for z:float in [-2.2,0.0,2.2]:
+				_box(section,Vector3(side*3.86,-1.2,z),Vector3(0.4,0.5,0.4),chip)
+				_box(section,Vector3(side*3.66,-1.2,z),Vector3(0.06,0.06,0.06),led)
+		for x:float in [-2.4,0.0,2.4]: _box(section,Vector3(x,2.02,0),Vector3(0.05,0.05,SECTION_LENGTH*0.86),trace)
+		for x:float in [-1.4,1.4]: _box(section,Vector3(x,-3.02,0),Vector3(0.05,0.04,SECTION_LENGTH*0.9),trace)
+		if index%3==1:
+			var light:=OmniLight3D.new(); light.position=Vector3(0,0.1,-1.0); light.light_color=Color(0.30,1.0,0.40); light.light_energy=2.8; light.omni_range=5.6; section.add_child(light)
 
 func _update_biome_environment(delta:float,biome:int)->void:
 	var target_ambient:=Color(0.38,0.40,0.50)
@@ -232,6 +275,12 @@ func _update_biome_environment(delta:float,biome:int)->void:
 		target_ambient=Color(0.50,0.40,0.20); target_fog=Color(0.34,0.22,0.05)
 	elif biome==8:
 		target_ambient=Color(0.40,0.24,0.52); target_fog=Color(0.34,0.06,0.44)
+	elif biome==9:
+		target_ambient=Color(0.14,0.36,0.40); target_fog=Color(0.02,0.16,0.20)
+	elif biome==10:
+		target_ambient=Color(0.52,0.44,0.28); target_fog=Color(0.34,0.24,0.10)
+	elif biome==11:
+		target_ambient=Color(0.22,0.44,0.24); target_fog=Color(0.04,0.20,0.08)
 	for child in get_children():
 		if child is WorldEnvironment and child.environment:
 			child.environment.ambient_light_color=child.environment.ambient_light_color.lerp(target_ambient,clampf(delta*0.7,0,1))
