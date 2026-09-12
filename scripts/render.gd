@@ -15,17 +15,39 @@ extends "res://scripts/extras.gd"
 #    identical geometry share the SAME resource instance, and the per-frame
 #    code only ever touches section.position - never a section's mesh children.
 #
-# 2. CONTENT - a new hazard, the ROTATING GIRDER: a wide bar (instead of the
-#    compact drone / mine / crate) that spins across the tunnel, so you must
-#    read its angle and thread the short side. It reuses the existing swept
-#    silhouette collision (collisions.gd) by refreshing the visual footprint
-#    after we swap the mesh, and the existing spin / curve bookkeeping, so no
-#    movement code changes. It only appears once the run is warmed up.
+# 2. CONTENT - new hazards: the ROTATING GIRDER (a wide bar you thread by the
+#    short side) and the HOMING SEEKER (a red-eyed drone that drifts toward your
+#    lane while it approaches). Both reuse the existing swept silhouette collision
+#    (collisions.gd) by refreshing the visual footprint after swapping the mesh;
+#    the seeker only nudges its lane meta, which the existing per-frame code
+#    re-applies, so no movement code is duplicated.
+#
+# 3. PERF - a pooled hit-flash: _flash fires on every near-miss/pickup/shield
+#    event and used to allocate+free a mesh+material+tween each time; now a fixed
+#    ring of nodes is reused.
+#
+# 4. UX - the menu overlays (shop / missions / music) are made mutually exclusive.
 # ---------------------------------------------------------------------------
 
 const GIRDER_MIN_SCORE := 220.0
 const GIRDER_CHANCE := 0.22
 const GIRDER_HALF_W := 1.24
+
+# Homing seeker hazard.
+const SEEKER_MIN_SCORE := 140.0
+const SEEKER_CHANCE := 0.18       # rolled after the girder slice (mutually exclusive)
+const SEEKER_TRACK_X := 1.7       # units/s the seeker drifts toward the ship's x
+const SEEKER_TRACK_Y := 1.15      # slower vertical tracking
+
+# Flash-effect object pool.
+const FLASH_POOL := 12
+var _flash_pool: Array = []
+var _flash_tweens: Array = []
+var _flash_next := 0
+
+func _ready() -> void:
+	super._ready()
+	_build_flash_pool()
 
 # --- 1. MultiMesh batching ---
 
@@ -74,9 +96,14 @@ func _batch_section(section: Node3D) -> void:
 
 func _reset_obstacle(area: Area3D, z: float) -> void:
 	super._reset_obstacle(area, z)
+	area.set_meta("homing", false)   # cleared unless this recycle becomes a seeker
 	# Keep the position/spin/lane super just set; only swap the shape sometimes.
-	if score > GIRDER_MIN_SCORE and randf() < GIRDER_CHANCE:
+	# One roll partitions the slice: girder, then seeker, else the normal hazard.
+	var r := randf()
+	if score > GIRDER_MIN_SCORE and r < GIRDER_CHANCE:
 		_make_girder(area)
+	elif score > SEEKER_MIN_SCORE and r < GIRDER_CHANCE + SEEKER_CHANCE:
+		_make_seeker(area)
 
 func _make_girder(area: Area3D) -> void:
 	var visual := area.get_child(0) as Node3D
@@ -101,7 +128,99 @@ func _make_girder(area: Area3D) -> void:
 	area.set_meta("fpx", fp.x)
 	area.set_meta("fpy", fp.y)
 
-# --- 3. Menu overlays are mutually exclusive ---
+# --- 3. Homing seeker hazard ---
+# A compact drone with a red eye that drifts toward the ship's lane while it
+# approaches, then locks in close so it can't chase you into a corner at point
+# blank. It tracks slower than the ship steers, so it's a lead-your-dodge threat,
+# not an unavoidable one. Only the base lane meta is nudged (in _update_world);
+# the existing per-frame code re-applies it, so no movement code is duplicated.
+func _make_seeker(area: Area3D) -> void:
+	var visual := area.get_child(0) as Node3D
+	if visual == null:
+		return
+	for child in visual.get_children():
+		child.free()
+	_clear_extra_collisions(area)
+	var hull := _mat(Color(0.15, 0.05, 0.06), Color(0.06, 0.01, 0.01), 0.10, 0.72, 0.20)
+	var eye := _mat(Color(1.0, 0.14, 0.08), Color(1.0, 0.0, 0.0), 6.0, 0.05, 0.05)
+	_box(visual, Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.34, 0.5), hull)
+	# Forward-facing red eye (toward the camera at +z) telegraphs "I'm tracking you".
+	_box(visual, Vector3(0.0, 0.0, 0.30), Vector3(0.24, 0.24, 0.06), eye)
+	# Angled fins either side.
+	for s: float in [-1.0, 1.0]:
+		_box(visual, Vector3(s * 0.42, 0.0, 0.0), Vector3(0.34, 0.07, 0.32), hull, Vector3(0.0, 0.0, s * 14.0))
+	_set_primary_box(area, Vector3(0.6, 0.42, 0.5), Vector3.ZERO)
+	var fp := _visual_footprint(area)
+	area.set_meta("fpx", fp.x)
+	area.set_meta("fpy", fp.y)
+	area.set_meta("homing", true)
+
+func _update_world(delta: float) -> void:
+	super._update_world(delta)
+	if not (started and alive):
+		return
+	for child in obstacle_root.get_children():
+		var area := child as Area3D
+		if not bool(area.get_meta("homing", false)):
+			continue
+		var az := area.position.z
+		# Track only while approaching from a distance; lock once close (fair).
+		if az < -4.0 and az > -70.0:
+			var bx := float(area.get_meta("base_x", area.position.x))
+			var by := float(area.get_meta("base_y", area.position.y))
+			bx = move_toward(bx, ship.position.x, SEEKER_TRACK_X * delta)
+			by = move_toward(by, ship.position.y, SEEKER_TRACK_Y * delta)
+			area.set_meta("base_x", bx)
+			area.set_meta("base_y", by)
+
+# --- 4. Pooled hit flashes ---
+# _flash fires on every near-miss (very frequent), pickup and shield event, and
+# each call used to allocate a MeshInstance3D + material + tween then free them.
+# Reuse a fixed ring of flash nodes instead: no steady allocation churn.
+func _build_flash_pool() -> void:
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.35
+	mesh.height = 0.7
+	for i in range(FLASH_POOL):
+		var m := MeshInstance3D.new()
+		m.mesh = mesh
+		var mat := StandardMaterial3D.new()
+		mat.emission_enabled = true
+		mat.metallic = 0.0
+		mat.roughness = 0.1
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.material_override = mat
+		m.visible = false
+		add_child(m)
+		_flash_pool.append(m)
+		_flash_tweens.append(null)
+
+func _flash(pos: Vector3, color: Color) -> void:
+	if _flash_pool.is_empty():
+		super._flash(pos, color)
+		return
+	var idx := _flash_next
+	_flash_next = (_flash_next + 1) % _flash_pool.size()
+	var m: MeshInstance3D = _flash_pool[idx]
+	var mat: StandardMaterial3D = m.material_override
+	var prev: Tween = _flash_tweens[idx]
+	if prev != null and prev.is_valid():
+		prev.kill()
+	m.position = pos
+	m.scale = Vector3.ONE
+	mat.albedo_color = Color(color.r, color.g, color.b, 1.0)
+	mat.emission = color
+	mat.emission_energy_multiplier = 6.0
+	m.visible = true
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(m, "scale", Vector3(3.0, 3.0, 3.0), 0.35)
+	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.35)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.35)
+	tw.chain().tween_callback(func() -> void: m.visible = false)
+	_flash_tweens[idx] = tw
+
+# --- 5. Menu overlays are mutually exclusive ---
 # Shop / Missions / Music panels each just set themselves visible, so they used
 # to stack on top of each other. Opening one now closes the others first.
 
