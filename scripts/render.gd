@@ -45,6 +45,8 @@ const SPEED_STREAKS_EXTRA := 34
 var _flash_pool: Array = []
 var _flash_tweens: Array = []
 var _flash_next := 0
+var _hud_marks: Array[ColorRect] = []
+var _speed_bars: Array[ColorRect] = []
 
 # Continue-for-coins on death.
 const CONTINUE_BASE_COST := 60      # first continue; doubles each time in a run
@@ -71,6 +73,10 @@ func _make_world() -> void:
 	super._make_world()
 	_retune_environment()
 	_add_chase_lights()
+
+func _build_ship() -> void:
+	super._build_ship()
+	_add_ship_detail_lights()
 
 func _retune_environment() -> void:
 	for child in get_children():
@@ -106,6 +112,18 @@ func _add_chase_lights() -> void:
 	right.shadow_enabled = false
 	add_child(right)
 
+func _add_ship_detail_lights() -> void:
+	if ship_visual == null:
+		return
+	var cyan := _mat(Color(0.18, 0.92, 1.0), Color(0.0, 0.75, 1.0), 2.8, 0.06, 0.04)
+	var amber := _mat(Color(1.0, 0.50, 0.10), Color(1.0, 0.20, 0.02), 2.5, 0.05, 0.05)
+	var red := _mat(Color(1.0, 0.08, 0.12), Color(1.0, 0.0, 0.04), 2.8, 0.06, 0.05)
+	_box(ship_visual, Vector3(0.0, 0.45, -1.60), Vector3(0.40, 0.035, 0.055), cyan)
+	_box(ship_visual, Vector3(0.0, 0.26, 0.82), Vector3(0.28, 0.035, 0.060), amber)
+	for side: float in [-1.0, 1.0]:
+		_box(ship_visual, Vector3(side * 1.88, 0.12, 0.42), Vector3(0.055, 0.050, 0.13), red if side < 0.0 else cyan)
+		_box(ship_visual, Vector3(side * 1.16, 0.24, -0.36), Vector3(0.36, 0.030, 0.050), cyan, Vector3(0.0, side * -18.0, side * 30.0))
+
 func _spawn_streaks() -> void:
 	super._spawn_streaks()
 	var fast := _mat(Color(0.42, 0.90, 1.0), Color(0.06, 0.74, 1.0), 2.2, 0.0, 0.08)
@@ -121,6 +139,7 @@ func _spawn_streaks() -> void:
 func _make_ui() -> void:
 	super._make_ui()
 	_add_hud_frame()
+	_add_speed_edge_bars()
 
 func _add_hud_frame() -> void:
 	var layer := _hud_layer()
@@ -152,7 +171,25 @@ func _add_hud_rect(parent: Control, pos: Vector2, size: Vector2, color: Color) -
 	r.size = size
 	r.color = color
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.set_meta("base_color", color)
 	parent.add_child(r)
+	_hud_marks.append(r)
+
+func _add_speed_edge_bars() -> void:
+	var layer := _hud_layer()
+	if layer == null:
+		return
+	for side: float in [0.0, 1.0]:
+		for i in range(9):
+			var bar := ColorRect.new()
+			bar.position = Vector2(12.0 if side == 0.0 else 1080.0 - 24.0, 520.0 + float(i) * 74.0)
+			bar.size = Vector2(12.0, 42.0)
+			bar.color = Color(0.15, 0.82, 1.0, 0.0)
+			bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			bar.set_meta("side", side)
+			bar.set_meta("idx", i)
+			layer.add_child(bar)
+			_speed_bars.append(bar)
 
 func _panel_style() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -469,6 +506,7 @@ func _offer_continue(cost: int) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	_update_visual_pulse(delta)
 	if not _continue_active:
 		return
 	var left := float(_continue_deadline - Time.get_ticks_msec()) / 1000.0
@@ -480,6 +518,33 @@ func _process(delta: float) -> void:
 		_continue_timer_label.text = "%d s" % int(ceil(left))
 	if _continue_bar:
 		_continue_bar.value = clampf(left / CONTINUE_SECONDS * 100.0, 0.0, 100.0)
+
+func _update_visual_pulse(_delta: float) -> void:
+	var speed_ratio := clampf((speed - 13.0) / maxf(max_speed - 13.0, 1.0), 0.0, 1.0)
+	var active := started and alive
+	var od := _overdrive_active()
+	var t := float(Time.get_ticks_msec()) * 0.001
+	var pulse := 0.70 + 0.30 * sin(t * (2.2 + speed_ratio * 3.0))
+	for mark in _hud_marks:
+		if mark == null:
+			continue
+		var base: Color = mark.get_meta("base_color", mark.color)
+		var alpha := base.a * (0.55 if not active else 0.82 + speed_ratio * 0.35 + pulse * 0.18)
+		if od:
+			alpha = maxf(alpha, base.a * 1.35)
+		mark.color = Color(base.r, base.g, base.b, clampf(alpha, 0.0, 0.86))
+	for bar in _speed_bars:
+		if bar == null:
+			continue
+		var idx := int(bar.get_meta("idx", 0))
+		var side := float(bar.get_meta("side", 0.0))
+		var phase := fmod(t * (1.8 + speed_ratio * 4.0) + float(idx) * 0.18 + side * 0.4, 1.0)
+		var alpha := 0.0 if not active else clampf((1.0 - phase) * speed_ratio * 0.42, 0.0, 0.38)
+		if od:
+			alpha = maxf(alpha, 0.18 + (1.0 - phase) * 0.42)
+		var col := Color(1.0, 0.72, 0.18, alpha) if od else Color(0.14, 0.84, 1.0, alpha)
+		bar.color = col
+		bar.position.y = 520.0 + float(idx) * 74.0 + phase * 42.0
 
 func _end_continue_offer() -> void:
 	_continue_active = false
