@@ -46,20 +46,36 @@ func _build_trails() -> void:
 	# at the tail, never a cloud in front of the fuselage.
 	for x: float in [-0.34, 0.34]:
 		var p := CPUParticles3D.new()
-		p.amount = 8
-		p.lifetime = 0.18
+		p.amount = 12
+		p.lifetime = 0.22
 		p.position = Vector3(x, -0.06, 1.58)
 		p.direction = Vector3(0.0, 0.0, 1.0)   # trail just behind the nozzle
-		p.spread = 5.0
+		p.spread = 6.5
 		p.initial_velocity_min = 1.4
-		p.initial_velocity_max = 2.4
+		p.initial_velocity_max = 2.8
 		p.gravity = Vector3.ZERO
 		p.scale_amount_min = 0.03
-		p.scale_amount_max = 0.06
+		p.scale_amount_max = 0.075
 		p.color = Color(0.4, 0.92, 1.0, 0.7)
-		p.mesh = _quad(0.11, Color(0.4, 0.92, 1.0), 1.6)
+		p.mesh = _quad(0.13, Color(0.4, 0.92, 1.0), 1.9)
 		ship_visual.add_child(p)
 		_trails.append(p)
+
+		var core := CPUParticles3D.new()
+		core.amount = 5
+		core.lifetime = 0.13
+		core.position = Vector3(x, -0.06, 1.55)
+		core.direction = Vector3(0.0, 0.0, 1.0)
+		core.spread = 3.0
+		core.initial_velocity_min = 0.9
+		core.initial_velocity_max = 1.7
+		core.gravity = Vector3.ZERO
+		core.scale_amount_min = 0.035
+		core.scale_amount_max = 0.055
+		core.color = Color(1.0, 0.55, 0.18, 0.72)
+		core.mesh = _quad(0.10, Color(1.0, 0.46, 0.12), 2.4)
+		ship_visual.add_child(core)
+		_trails.append(core)
 
 func _build_burst() -> void:
 	if ship == null:
@@ -93,5 +109,5 @@ func _process(delta: float) -> void:
 	var od := _overdrive_active()
 	for p in _trails:
 		var cp := p as CPUParticles3D
-		cp.initial_velocity_max = 3.6 if od else 2.4
-		cp.scale_amount_max = 0.10 if od else 0.06
+		cp.initial_velocity_max = 4.2 if od else 2.8
+		cp.scale_amount_max = 0.12 if od else 0.075
