@@ -164,6 +164,9 @@ func _layout_primary_hud() -> void:
 	if _od_label:
 		_od_label.position = Vector2(256, 126)
 		_od_label.add_theme_font_size_override("font_size", 22)
+	if _shield_label:
+		_shield_label.position = Vector2(-328, 244)
+		_shield_label.add_theme_font_size_override("font_size", 24)
 	if _hud_backdrop:
 		_hud_backdrop.position = Vector2(24, 22)
 		_hud_backdrop.size = Vector2(312, 142)
@@ -177,14 +180,17 @@ func _add_hud_frame() -> void:
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(frame)
+	layer.move_child(frame, 0)
 
 	var cyan := Color(0.18, 0.86, 1.0, 0.42)
 	var amber := Color(1.0, 0.55, 0.12, 0.36)
 	var dim := Color(0.26, 0.42, 0.62, 0.18)
 	for sx: float in [0.0, 1.0]:
 		for sy: float in [0.0, 1.0]:
-			var x := 360.0 if sx == 0.0 and sy == 0.0 else (34.0 if sx == 0.0 else 1080.0 - 154.0)
-			var y := 194.0 if sx == 0.0 and sy == 0.0 else (34.0 if sy == 0.0 else 1920.0 - 154.0)
+			var top_left := sx == 0.0 and sy == 0.0
+			var top_right := sx == 1.0 and sy == 0.0
+			var x := 360.0 if top_left else (810.0 if top_right else (34.0 if sx == 0.0 else 1080.0 - 154.0))
+			var y := 194.0 if top_left else (330.0 if top_right else (34.0 if sy == 0.0 else 1920.0 - 154.0))
 			_add_hud_rect(frame, Vector2(x, y), Vector2(120, 4), cyan if sy == 0.0 else amber)
 			_add_hud_rect(frame, Vector2(x, y), Vector2(4, 120), cyan if sx == 0.0 else amber)
 	for y: float in [390.0, 1530.0]:
@@ -216,6 +222,7 @@ func _add_speed_edge_bars() -> void:
 			bar.set_meta("side", side)
 			bar.set_meta("idx", i)
 			layer.add_child(bar)
+			layer.move_child(bar, 0)
 			_speed_bars.append(bar)
 
 func _panel_style() -> StyleBoxFlat:
