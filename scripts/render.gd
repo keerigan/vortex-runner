@@ -59,6 +59,7 @@ var _continue_active := false
 var _continue_deadline := 0
 var _continue_cost := 0
 var _continue_panel: Control
+var _continue_stats_label: Label
 var _continue_timer_label: Label
 var _continue_coins_label: Label
 var _continue_bar: ProgressBar
@@ -520,6 +521,8 @@ func _build_continue_panel() -> void:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(box)
 	box.add_child(_label("CONTINUER ?", 52, Color(1.0, 0.85, 0.3)))
+	_continue_stats_label = _label("DISTANCE  000000\nORBES  0   FRÔLEMENTS  0", 18, Color(0.72, 0.82, 0.95, 0.92))
+	box.add_child(_continue_stats_label)
 	_continue_coins_label = _label("PIÈCES : 0", 34, Color(1.0, 0.82, 0.35))
 	box.add_child(_continue_coins_label)
 	_continue_timer_label = _label("30 s", 40, Color(0.9, 0.95, 1.0))
@@ -563,15 +566,18 @@ func _show_game_over() -> void:
 		_update_run_summary()
 
 func _update_run_summary() -> void:
-	if _over_stats_label == null:
-		return
 	var core_count := int(_run_coins / maxi(1, CORE_COINS))
-	_over_stats_label.text = "DISTANCE  %06d\nORBES  %d   FRÔLEMENTS  %d   PIÈCES  +%d" % [int(score), core_count, _run_near_misses, _last_payout]
+	var summary := "DISTANCE  %06d\nORBES  %d   FRÔLEMENTS  %d   PIÈCES  +%d" % [int(score), core_count, _run_near_misses, _last_payout]
+	if _over_stats_label:
+		_over_stats_label.text = summary
+	if _continue_stats_label:
+		_continue_stats_label.text = summary
 
 func _offer_continue(cost: int) -> void:
 	_continue_active = true
 	_continue_cost = cost
 	_continue_deadline = Time.get_ticks_msec() + int(CONTINUE_SECONDS * 1000.0)
+	_update_run_summary()
 	if game_over_label:
 		game_over_label.visible = false
 	if _pause_button:
