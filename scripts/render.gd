@@ -207,13 +207,10 @@ func _add_hud_frame() -> void:
 	var amber := Color(1.0, 0.55, 0.12, 0.36)
 	var dim := Color(0.26, 0.42, 0.62, 0.18)
 	for sx: float in [0.0, 1.0]:
-		for sy: float in [0.0, 1.0]:
-			var top_left := sx == 0.0 and sy == 0.0
-			var top_right := sx == 1.0 and sy == 0.0
-			var x := 360.0 if top_left else (810.0 if top_right else (34.0 if sx == 0.0 else 1080.0 - 154.0))
-			var y := 194.0 if top_left else (330.0 if top_right else (34.0 if sy == 0.0 else 1920.0 - 154.0))
-			_add_hud_rect(frame, Vector2(x, y), Vector2(120, 4), cyan if sy == 0.0 else amber)
-			_add_hud_rect(frame, Vector2(x, y), Vector2(4, 120), cyan if sx == 0.0 else amber)
+		var x := 34.0 if sx == 0.0 else 1080.0 - 154.0
+		var y := 1920.0 - 154.0
+		_add_hud_rect(frame, Vector2(x, y), Vector2(120, 4), amber)
+		_add_hud_rect(frame, Vector2(x, y), Vector2(4, 120), cyan if sx == 0.0 else amber)
 	for y: float in [390.0, 1530.0]:
 		_add_hud_rect(frame, Vector2(96.0, y), Vector2(888.0, 2.0), dim)
 	for x: float in [260.0, 540.0, 820.0]:
