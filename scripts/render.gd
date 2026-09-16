@@ -30,23 +30,25 @@ extends "res://scripts/extras.gd"
 # ---------------------------------------------------------------------------
 
 const GIRDER_MIN_SCORE := 220.0
-const GIRDER_CHANCE := 0.22
+const GIRDER_CHANCE := 0.18
 const GIRDER_HALF_W := 1.24
 
 # Homing seeker hazard.
-const SEEKER_MIN_SCORE := 140.0
-const SEEKER_CHANCE := 0.18       # rolled after the girder slice (mutually exclusive)
-const SEEKER_TRACK_X := 1.7       # units/s the seeker drifts toward the ship's x
-const SEEKER_TRACK_Y := 1.15      # slower vertical tracking
+const SEEKER_MIN_SCORE := 360.0
+const SEEKER_CHANCE := 0.14       # rolled after the girder slice (mutually exclusive)
+const SEEKER_TRACK_X := 1.45      # units/s the seeker drifts toward the ship's x
+const SEEKER_TRACK_Y := 0.95      # slower vertical tracking
 
 # Flash-effect object pool.
 const FLASH_POOL := 12
-const SPEED_STREAKS_EXTRA := 34
+const SPEED_STREAKS_EXTRA := 24
 var _flash_pool: Array = []
 var _flash_tweens: Array = []
 var _flash_next := 0
 var _hud_marks: Array[ColorRect] = []
 var _speed_bars: Array[ColorRect] = []
+var _over_stats_label: Label
+var _run_near_misses := 0
 
 # Continue-for-coins on death.
 const CONTINUE_BASE_COST := 60      # first continue; doubles each time in a run
@@ -65,10 +67,14 @@ var _continue_btn: Button
 func _ready() -> void:
 	super._ready()
 	_layout_transient_notifications()
+	_build_run_summary_ui()
 	_build_flash_pool()
 	_build_continue_panel()
 
 # --- 0. Visual depth / readability polish ---
+
+func _difficulty() -> float:
+	return pow(clampf(score / 8200.0, 0.0, 1.0), 1.18)
 
 func _make_world() -> void:
 	super._make_world()
@@ -142,6 +148,10 @@ func _make_ui() -> void:
 	_layout_primary_hud()
 	_add_hud_frame()
 	_add_speed_edge_bars()
+
+func _begin_game() -> void:
+	_run_near_misses = 0
+	super._begin_game()
 
 func _layout_primary_hud() -> void:
 	if ui_label:
@@ -231,9 +241,9 @@ func _add_speed_edge_bars() -> void:
 	if layer == null:
 		return
 	for side: float in [0.0, 1.0]:
-		for i in range(9):
+		for i in range(7):
 			var bar := ColorRect.new()
-			bar.position = Vector2(12.0 if side == 0.0 else 1080.0 - 24.0, 520.0 + float(i) * 74.0)
+			bar.position = Vector2(12.0 if side == 0.0 else 1080.0 - 24.0, 560.0 + float(i) * 86.0)
 			bar.size = Vector2(12.0, 42.0)
 			bar.color = Color(0.15, 0.82, 1.0, 0.0)
 			bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -254,6 +264,16 @@ func _panel_style() -> StyleBoxFlat:
 	sb.shadow_size = 18
 	sb.shadow_offset = Vector2(0.0, 8.0)
 	return sb
+
+func _build_run_summary_ui() -> void:
+	if _over_panel == null:
+		return
+	var box := _over_panel.get_child(0) as VBoxContainer
+	if box == null:
+		return
+	_over_stats_label = _label("DISTANCE  000000\nORBES  0   FRÔLEMENTS  0", 18, Color(0.72, 0.82, 0.95, 0.92))
+	box.add_child(_over_stats_label)
+	box.move_child(_over_stats_label, mini(3, box.get_child_count() - 1))
 
 # --- 1. MultiMesh batching ---
 
@@ -399,8 +419,8 @@ func _add_hazard_telegraph(area: Area3D) -> void:
 	var torus := TorusMesh.new()
 	torus.inner_radius = radius
 	torus.outer_radius = radius + 0.045
-	torus.rings = 18
-	torus.ring_segments = 8
+	torus.rings = 14
+	torus.ring_segments = 6
 	ring.mesh = torus
 	ring.material_override = hot
 	ring.position.z = 0.36
@@ -411,6 +431,10 @@ func _add_hazard_telegraph(area: Area3D) -> void:
 		_box(visual, Vector3(x, 0.0, 0.39), Vector3(0.08, 0.20, 0.05), rim)
 	for y: float in [-radius, radius]:
 		_box(visual, Vector3(0.0, y, 0.39), Vector3(0.20, 0.08, 0.05), rim)
+
+func _near_miss(pos: Vector3) -> void:
+	super._near_miss(pos)
+	_run_near_misses += 1
 
 func _update_world(delta: float) -> void:
 	super._update_world(delta)
@@ -536,6 +560,13 @@ func _show_game_over() -> void:
 		_offer_continue(cost)
 	else:
 		super._show_game_over()
+		_update_run_summary()
+
+func _update_run_summary() -> void:
+	if _over_stats_label == null:
+		return
+	var core_count := int(_run_coins / maxi(1, CORE_COINS))
+	_over_stats_label.text = "DISTANCE  %06d\nORBES  %d   FRÔLEMENTS  %d   PIÈCES  +%d" % [int(score), core_count, _run_near_misses, _last_payout]
 
 func _offer_continue(cost: int) -> void:
 	_continue_active = true
@@ -596,7 +627,7 @@ func _update_visual_pulse(_delta: float) -> void:
 			alpha = maxf(alpha, 0.18 + (1.0 - phase) * 0.42)
 		var col := Color(1.0, 0.72, 0.18, alpha) if od else Color(0.14, 0.84, 1.0, alpha)
 		bar.color = col
-		bar.position.y = 520.0 + float(idx) * 74.0 + phase * 42.0
+		bar.position.y = 560.0 + float(idx) * 86.0 + phase * 42.0
 
 func _end_continue_offer() -> void:
 	_continue_active = false
