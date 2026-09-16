@@ -138,8 +138,35 @@ func _spawn_streaks() -> void:
 
 func _make_ui() -> void:
 	super._make_ui()
+	_layout_primary_hud()
 	_add_hud_frame()
 	_add_speed_edge_bars()
+
+func _layout_primary_hud() -> void:
+	if ui_label:
+		ui_label.position = Vector2(36, 34)
+		ui_label.add_theme_font_size_override("font_size", 30)
+	if _best_label:
+		_best_label.position = Vector2(38, 74)
+		_best_label.add_theme_font_size_override("font_size", 20)
+	if _chain_label:
+		_chain_label.position = Vector2(38, 190)
+		_chain_label.add_theme_font_size_override("font_size", 34)
+	for i in range(_hp_pips.size()):
+		var pip := _hp_pips[i] as ColorRect
+		pip.position = Vector2(38 + i * 34, 108)
+		pip.size = Vector2(26, 10)
+	if _boost_bg:
+		_boost_bg.position = Vector2(38, 136)
+		_boost_bg.size = Vector2(BAR_W, 10)
+	if _boost_fill:
+		_boost_fill.position = Vector2(38, 136)
+	if _od_label:
+		_od_label.position = Vector2(256, 126)
+		_od_label.add_theme_font_size_override("font_size", 22)
+	if _hud_backdrop:
+		_hud_backdrop.position = Vector2(24, 22)
+		_hud_backdrop.size = Vector2(312, 142)
 
 func _add_hud_frame() -> void:
 	var layer := _hud_layer()
@@ -156,8 +183,8 @@ func _add_hud_frame() -> void:
 	var dim := Color(0.26, 0.42, 0.62, 0.18)
 	for sx: float in [0.0, 1.0]:
 		for sy: float in [0.0, 1.0]:
-			var x := 34.0 if sx == 0.0 else 1080.0 - 154.0
-			var y := 34.0 if sy == 0.0 else 1920.0 - 154.0
+			var x := 360.0 if sx == 0.0 and sy == 0.0 else (34.0 if sx == 0.0 else 1080.0 - 154.0)
+			var y := 194.0 if sx == 0.0 and sy == 0.0 else (34.0 if sy == 0.0 else 1920.0 - 154.0)
 			_add_hud_rect(frame, Vector2(x, y), Vector2(120, 4), cyan if sy == 0.0 else amber)
 			_add_hud_rect(frame, Vector2(x, y), Vector2(4, 120), cyan if sx == 0.0 else amber)
 	for y: float in [390.0, 1530.0]:
