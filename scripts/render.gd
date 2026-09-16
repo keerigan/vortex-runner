@@ -64,6 +64,7 @@ var _continue_btn: Button
 
 func _ready() -> void:
 	super._ready()
+	_layout_transient_notifications()
 	_build_flash_pool()
 	_build_continue_panel()
 
@@ -162,14 +163,34 @@ func _layout_primary_hud() -> void:
 	if _boost_fill:
 		_boost_fill.position = Vector2(38, 136)
 	if _od_label:
-		_od_label.position = Vector2(256, 126)
-		_od_label.add_theme_font_size_override("font_size", 22)
+		_od_label.position = Vector2(390, 144)
+		_od_label.size = Vector2(300, 42)
+		_od_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_od_label.add_theme_font_size_override("font_size", 24)
 	if _shield_label:
 		_shield_label.position = Vector2(-328, 244)
 		_shield_label.add_theme_font_size_override("font_size", 24)
 	if _hud_backdrop:
 		_hud_backdrop.position = Vector2(24, 22)
 		_hud_backdrop.size = Vector2(312, 142)
+
+func _layout_transient_notifications() -> void:
+	_place_toast(_content_toast, Vector2(300, 260), 480, 34)
+	_place_toast(_mission_toast, Vector2(300, 318), 480, 32)
+	_place_toast(_daily_toast, Vector2(300, 376), 480, 32)
+	if _od_label:
+		_od_label.position = Vector2(390, 144)
+		_od_label.size = Vector2(300, 42)
+		_od_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_od_label.add_theme_font_size_override("font_size", 24)
+
+func _place_toast(label: Label, pos: Vector2, width: float, font_size: int) -> void:
+	if label == null:
+		return
+	label.position = pos
+	label.size = Vector2(width, 54)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", font_size)
 
 func _add_hud_frame() -> void:
 	var layer := _hud_layer()
