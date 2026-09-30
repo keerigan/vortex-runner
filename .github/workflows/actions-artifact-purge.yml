@@ -1,0 +1,155 @@
+name: Purge Actions artifacts
+on:
+  push:
+    branches: ["main"]
+    paths: ['.github/workflows/actions-artifact-purge.yml']
+  workflow_run:
+    workflows: ["Android APK Release"]
+    types: [completed]
+  schedule:
+    - cron: '42 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview deletions without removing artifacts'
+        type: boolean
+        default: false
+
+permissions:
+  actions: write
+
+concurrency:
+  group: actions-artifact-purge
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # No checkout and no artifact downloads: workflow_run never executes build code.
+      - name: Purge obsolete workflow artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+          ARTIFACT_RETENTION_DAYS: '{"visual-review":3,"vortex-runner-apk":7}'
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import time
+          import urllib.error
+          import urllib.request
+          from collections import defaultdict
+          from datetime import datetime, timedelta, timezone
+          
+          def timestamp(value):
+              return datetime.fromisoformat(value.replace("Z", "+00:00"))
+          
+          def choose_deletions(artifacts, runs, now, retention):
+              """Keep the newest success and newest recent diagnostic per workflow/name."""
+              groups = defaultdict(list)
+              for artifact in artifacts:
+                  run = runs.get(artifact["workflow_run"]["id"])
+                  if run and run["status"] == "completed":
+                      groups[(run["workflow_id"], artifact["name"])].append(artifact)
+              deletions = []
+              for (_, name), items in groups.items():
+                  items.sort(key=lambda item: (item["created_at"], item["id"]), reverse=True)
+                  keep = set()
+                  for successful, days in [(True, retention.get(name, 7)), (False, 3)]:
+                      for artifact in items:
+                          run = runs[artifact["workflow_run"]["id"]]
+                          if (run["conclusion"] == "success") != successful:
+                              continue
+                          if not artifact.get("expired", False) and timestamp(artifact["created_at"]) > now - timedelta(days=days):
+                              keep.add(artifact["id"])
+                              break
+                  deletions.extend(artifact for artifact in items if artifact["id"] not in keep)
+              return deletions
+          
+          def main():
+              repository = os.environ["GITHUB_REPOSITORY"]
+              api = os.environ["GITHUB_API_URL"]
+              prefix = f"/repos/{repository}"
+              dry_run = os.environ.get("DRY_RUN", "false").lower() == "true"
+              retention = json.loads(os.environ["ARTIFACT_RETENTION_DAYS"])
+              headers = {
+                  "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              }
+          
+              def request(path, method="GET"):
+                  if method == "DELETE" and not re.fullmatch(re.escape(prefix) + r"/actions/artifacts/[0-9]+", path):
+                      raise ValueError("Only repository Actions artifacts may be deleted")
+                  for attempt in range(4):
+                      try:
+                          with urllib.request.urlopen(urllib.request.Request(api + path, headers=headers, method=method), timeout=30) as response:
+                              raw = response.read()
+                              return json.loads(raw) if raw else None
+                      except urllib.error.HTTPError as error:
+                          if error.code >= 500 and attempt < 3:
+                              time.sleep(2 ** attempt)
+                              continue
+                          raise
+          
+              # Take the entire paginated snapshot before deleting, so pagination cannot skip files.
+              artifacts = []
+              page = 1
+              while True:
+                  batch = request(f"{prefix}/actions/artifacts?per_page=100&page={page}")["artifacts"]
+                  artifacts.extend(batch)
+                  if len(batch) < 100:
+                      break
+                  page += 1
+              runs = {}
+              for artifact in artifacts:
+                  run_id = artifact["workflow_run"]["id"]
+                  if run_id in runs:
+                      continue
+                  try:
+                      runs[run_id] = request(f"{prefix}/actions/runs/{run_id}")
+                  except urllib.error.HTTPError as error:
+                      if error.code != 404:
+                          raise
+                      runs[run_id] = None
+          
+              candidates = choose_deletions(artifacts, runs, datetime.now(timezone.utc), retention)
+              deleted = []
+              refreshed = {}
+              for artifact in candidates:
+                  run_id = artifact["workflow_run"]["id"]
+                  # A completed workflow may have been re-run since the initial snapshot.
+                  if run_id not in refreshed:
+                      try:
+                          refreshed[run_id] = request(f"{prefix}/actions/runs/{run_id}")
+                      except urllib.error.HTTPError as error:
+                          if error.code != 404:
+                              raise
+                          refreshed[run_id] = None
+                  current = refreshed[run_id]
+                  if not current or current["status"] != "completed" or current["conclusion"] != runs[run_id]["conclusion"]:
+                      continue
+                  print(json.dumps({"action": "would_delete" if dry_run else "delete", "id": artifact["id"], "name": artifact["name"], "bytes": artifact["size_in_bytes"]}), flush=True)
+                  if not dry_run:
+                      try:
+                          request(f"{prefix}/actions/artifacts/{artifact['id']}", method="DELETE")
+                      except urllib.error.HTTPError as error:
+                          if error.code != 404:
+                              raise
+                          continue
+                  deleted.append(artifact)
+          
+              result = {"repository": repository, "dry_run": dry_run, "scanned": len(artifacts), "selected": len(candidates), "deleted": 0 if dry_run else len(deleted), "freed_bytes": 0 if dry_run else sum(item["size_in_bytes"] for item in deleted)}
+              print("PURGE_RESULT=" + json.dumps(result), flush=True)
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+                  summary.write("## Actions artifact purge\n\n")
+                  summary.write("Keeps the newest successful artifact per workflow and name until its retention limit, plus the newest failed-run diagnostic for up to 3 days. Active runs are protected. Release assets are outside this purge.\n\n")
+                  summary.write("~~~json\n" + json.dumps(result, indent=2) + "\n~~~\n")
+          
+          if __name__ == "__main__":
+              main()
+          
+          PY
